@@ -76,8 +76,8 @@ audio thread receives the `patch:Set`, hands the path to `work()`, and swaps in 
 
 ## Verified: factory presets
 
-Exercised 2026-09-17 by five control-port-only synths (`mod-gsynth*`) on a Dwarf, a Duo and a Duo X running
-1.14.0.3333. Declare each preset in `manifest.ttl` and put its values in a file it points to:
+Exercised by a family of control-port-only synths on a Dwarf, a Duo and a Duo X. Declare each
+preset in `manifest.ttl` and put its values in a file it points to:
 
 ```turtle
 # manifest.ttl
@@ -105,20 +105,20 @@ actuator or unaddressed again (`addressed`/`unaddressed`, `effects.c:4719-4724,7
 the feature a plugin can then drive what the device shows for that control: `set_label`,
 `set_value`, `set_unit`, `set_indicator`, `set_led_with_blink`, `set_led_with_brightness` and
 `popup_message` (`mod-host/src/lv2/lv2-hmi.h:223-272`). The extension is defined in
-[`mod-lv2-extensions/mod-hmi.lv2`](https://github.com/mod-audio/mod-lv2-extensions). None of the
-plugin repos in this workspace uses it yet, so there is no worked example here. The feature is
-absent on MOD Desktop, so always check for it.
+[`mod-lv2-extensions/mod-hmi.lv2`](https://github.com/mod-audio/mod-lv2-extensions). No public
+MOD plugin uses it yet, so there is no worked example here. The feature is absent on MOD
+Desktop, so always check for it.
 
 <!-- GAP: MIDI and CV are read from mod-host source, not yet exercised by a plugin built for this
      documentation; mod-hmi has no worked example here -->
 
 ## Verified: port groups (mod-ui 1.14 on)
 
-Support came from ALABS and is in mod-ui from `v1.14.0.3333` (read at `18dfe55a`); 1.13.5 ignores the
-triples, so a grouped plugin is harmless there. **Confirmed on a Dwarf running 1.14.0.3333, 2026-09-17**: three
-`mod-gsynth*` plugins with the TTL below; `curl "http://<device>/effect/get?uri=<uri>"` returns `portGroups` in
-`lv2:index` order and each control input's `group` set to the group URI. (How it looks on screen is not
-described here yet.)
+In mod-ui from `v1.14.0.3333`; 1.13.5 ignores the triples, so a grouped plugin is harmless
+there. **Confirmed on a Dwarf**: three plugins from one family, with the TTL below;
+`curl "http://<device>/effect/get?uri=<uri>"` returns `portGroups` in `lv2:index` order and
+each control input's `group` set to the group URI. (How it looks on screen is not described
+here yet.)
 
 What mod-ui reads (`utils/utils_lilv.cpp:2864-2899`): on each control port, `pg:group <group-uri>`; on
 the group node, `lv2:symbol`, `lv2:name` and **`lv2:index`**, which mod-ui uses as the display order

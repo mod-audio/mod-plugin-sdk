@@ -113,11 +113,8 @@ Verified again 2026-09-16 on a Dwarf running 1.14.0.3333, 25 bundles at once: `s
   `-n` no fork, `-i` interactive, other ports than 5555/5556. Each command answers `resp <code> [value]`.
   `connect system:capture_1 effect_0:<input symbol>` puts real input on it; leave the outputs unconnected and
   nothing reaches the speakers. It is invisible to mod-ui and gone when it quits (check with `jack_lsp`).
-  Verified 2026-09-17 on a Dwarf, a Duo and a Duo X. A command sent to the *running* mod-host on 5555 while
+  Verified on a Dwarf, a Duo and a Duo X. A command sent to the *running* mod-host on 5555 while
   mod-ui is up is never read: it sits in the socket backlog until mod-ui disconnects.
-- `Plugins/mod-plugin-management/tools/` has the on-device probes used for this
-  (`rt_check`, `xrun_counter`) and the scripts under
-  `build-records/plugins/logs/rt-check-2026-09-16/` show the whole sequence.
 
 ## To write / verify
 

@@ -7,13 +7,11 @@ Buildroot package recipe against it (`./build`). The recipe format is the subjec
 [RECIPES.md](RECIPES.md); this chapter is about getting the toolchain and running builds.
 
 It runs on Linux. On macOS or Windows the supported path is the Docker container the repo ships
-(see "Docker path" below); there is no native bootstrap for either. A bootstrap takes about half
-an hour and 12–15 GB per platform on a modern machine, once; a plugin build after that takes a
-minute or two. Every figure in this chapter was measured on a real bootstrap or build, with the
-date, rather than copied from the upstream README, which is out of date in places (its
-`wiki.moddevices.com` links are dead; this repository replaces them).
+(see "Docker path" below) — there is no native bootstrap for either. A bootstrap takes about
+half an hour and 12–15 GB per platform on a modern machine, once; a plugin build after that
+takes a minute or two.
 
-If you do not want a local toolchain at all, [builder.mod.audio](http://builder.mod.audio) builds
+If you don't want a local toolchain at all, [builder.mod.audio](http://builder.mod.audio) builds
 FAUST, Max gen~, Pure Data and `.mk` recipes in the cloud and installs the result on a unit over
 USB. See "Building without a toolchain" at the end.
 
@@ -28,8 +26,7 @@ automake binutils build-essential cpio libtool libcrypt-dev libncurses-dev pkg-c
 ```
 
 Bootstrap — builds ct-ng toolchain + Buildroot, **around half an hour** per platform on a
-modern multi-core machine (see "Bootstrap time" below; upstream's README says "more than 1
-hour"):
+modern multi-core machine (see "Bootstrap time" below):
 
 ```
 ./bootstrap.sh <platform>
@@ -44,13 +41,8 @@ Build a plugin:
 ./build <platform> <plugin-package>-dirclean     # clean
 ```
 
-Bundles land in `~/mod-workdir/<platform>/plugins`.
-
-Building the bundled example plugins needs submodules:
-
-```
-git submodule init && git submodule update
-```
+Bundles land in `~/mod-workdir/<platform>/plugins`. Building the bundled example plugins needs
+submodules: `git submodule init && git submodule update`.
 
 ## Platform name suffixes
 
@@ -71,25 +63,19 @@ their own dedicated toolchain (ct-ng 1.28, GCC 15).
 
 ## Docker path
 
-`docker-mount.sh <platform> [extra-mount-path]` (verified against its source,
-`mod-plugin-builder/docker-mount.sh`) is the whole mechanism — there's nothing beyond this script
-to learn:
+`docker-mount.sh <platform> [extra-mount-path]` is the whole mechanism:
 
-1. If an image tagged `mpbi_<platform>` doesn't exist yet, it builds one from `docker/Dockerfile`
-   (`docker buildx build --build-arg platform=<platform> --build-arg target=toolchain`).
-2. If a container named `mpb_<platform>` already exists, it just restarts and attaches to it
-   (`docker start -i`).
-3. Otherwise it creates one (`docker run -ti`, no `--privileged`, no special `--ulimit`), bind-mounting
-   the repo checkout to `/home/builder/mod-plugin-builder` and either your `PLUGINS_DIR` or an
-   extra path you pass in to `/mnt`.
+1. If an image tagged `mpbi_<platform>` doesn't exist yet, it builds one from `docker/Dockerfile`.
+2. If a container named `mpb_<platform>` already exists, it restarts and attaches to it.
+3. Otherwise it creates one, bind-mounting the repo checkout to `/home/builder/mod-plugin-builder`
+   and either your `PLUGINS_DIR` or an extra path you pass in, to `/mnt`.
 
-Once attached you're in a normal Linux shell with the toolchain image's dependencies pre-installed —
-run `./bootstrap.sh <platform>` and `./build <platform> <plugin>` inside it exactly as on a native
-Linux host. This is the real answer for macOS and Windows today: there's no native bootstrap for
-either, but a Docker container gives you the same Linux environment the README's dead
-`wiki.moddevices.com` link used to describe.
+Once attached you're in a normal Linux shell with the toolchain image's dependencies
+pre-installed — run `./bootstrap.sh <platform>` and `./build <platform> <plugin>` exactly as on
+a native Linux host. This is the real answer for macOS and Windows: no native bootstrap exists
+for either, but the container gives you the same Linux environment.
 
-## Disk usage — measured on this host's bootstrapped trees
+## Disk usage
 
 ```
 du -sh <workdir>/<platform>
@@ -97,135 +83,114 @@ du -sh <workdir>/<platform>
 
 | Platform | Size | Notes |
 |---|---|---|
-| `moddwarf-new` | 15 GB | full bootstrap + built plugins; `build/` (intermediate Buildroot state) alone is 13 GB, `host/` (host-side tools, e.g. CMake) 735 MB, `target/` (device rootfs) 139 MB, toolchain sysroot 289 MB |
+| `moddwarf-new` | 15 GB | full bootstrap + built plugins; `build/` (intermediate Buildroot state) alone is 13 GB, `host/` 735 MB, `target/` (device rootfs) 139 MB, toolchain sysroot 289 MB |
 | `darkglass-anagram` | 3.9 GB | full bootstrap |
 | `modduo-new` | 12 GB | full bootstrap + built plugin |
 | `modduox-new` | 12 GB | full bootstrap + built plugin |
 | `generic-aarch64` | 7.6 GB | **toolchain only** — see the failure mode below |
 | `download/` | 1.4 GB | shared source-tarball cache across all platforms |
 
-`build/` is by far the largest and most disposable component — the actual sysroot/host/target
-directories are what you need to keep working.
+`build/` is the largest and most disposable component — the sysroot/host/target directories are
+what you need to keep working.
 
-## Bootstrap time — measured
+## Bootstrap time
 
-Two platforms were bootstrapped from nothing in one attended session (2026-09-10), each run
-start-to-finish under `tmux` with a tee'd log, so these are real single-run durations rather
-than numbers back-computed from file timestamps:
+Single, uninterrupted runs, each timed start-to-finish:
 
 | Platform | Bootstrap | Tree size |
 |---|---|---|
 | `modduo-new` (32-bit ARM Cortex-A7) | **30 min** | 12 GB |
 | `modduox-new` (aarch64 Cortex-A53) | **32 min** | 12 GB |
 
-1h05m for both end to end, run **sequentially**, on a 12-core / 7 GB-RAM Linux host with the
-workdir on an external SSD. Upstream's README estimate of "more than 1 hour" is conservative
-for hardware of that class, but the shape of the machine matters more than the core count:
-**RAM is the binding constraint**, so running two bootstraps in parallel on a small-memory
-machine is slower than running them one after the other, not faster.
+Run sequentially on a 12-core/7 GB-RAM Linux host with the workdir on an external SSD: 1h05m for
+both. **RAM is the binding constraint** — running two bootstraps in parallel on a small-memory
+machine is slower than running them one after another, not faster.
 
-Following those, a single plugin build (`./build <platform> <plugin>`) took **89–93 seconds**
-and `./validate` was effectively instant. The multi-hour cost is the toolchain, once per
-platform; everything after it is short.
+A single plugin build after that (`./build <platform> <plugin>`) takes **89–93 seconds**, and
+`./validate` is effectively instant. The multi-hour cost is the toolchain, once per platform;
+everything after it is short.
 
-**Benign noise to expect:** each bootstrap log contains roughly 26 `error:` / `fatal error`
-lines from Qt5's configure feature probes (openvg, X11, xkbcommon, sybase, sqlite2). They are
-probes for optional features that are absent by design. Judge a bootstrap by its exit status
-and by whether `build/<buildroot-version>/` exists, not by grepping the log for "error".
+**Benign noise to expect:** each bootstrap log contains roughly 26 `error:`/`fatal error` lines
+from Qt5's configure feature probes for optional features that are absent by design. Judge a
+bootstrap by its exit status and by whether `build/<buildroot-version>/` exists, not by grepping
+the log for "error".
 
-## Alternate build path — repo-embedded direct cross-compile scripts
+## Alternate build path: some repos vendor their own cross-compile script
 
-Not every MOD plugin repo builds through `mod-plugin-builder`'s `./build <platform> <plugin>`
-recipe mechanism described above. `mod-neural-amps` (verified 2026-08-28) instead vendors its
-own `build-for-pablito.sh`, which cross-compiles directly with CMake against a
-`mod-plugin-builder`-bootstrapped toolchain's own output directories — same
-`WORKDIR`-overridable convention, but pointed at `<workdir>/<platform>/host`,
-`.../staging`, `.../target` and `.../host/usr/share/buildroot/toolchainfile.cmake` itself,
-rather than going through `./build`. Both paths consume the same bootstrapped toolchain tree;
-they're just two different front ends to it. **Check which one a given repo uses before
-assuming `./build <platform> <plugin>` is the entry point** — grep the repo root for a
-`build-for-*.sh` or similar before reaching for `mod-plugin-builder`.
+Not every MOD plugin repo builds through `./build <platform> <plugin>`'s recipe mechanism. A
+few vendor their own script that cross-compiles directly with CMake against a
+`mod-plugin-builder`-bootstrapped toolchain's output directories (`<workdir>/<platform>/host`,
+`.../staging`, `.../target`, and the toolchain file under
+`.../host/usr/share/buildroot/toolchainfile.cmake`) rather than going through `./build`. Both
+paths consume the same bootstrapped toolchain tree — they're just two different front ends to
+it. **Check which one a given repo uses before assuming `./build <platform> <plugin>` is the
+entry point** — grep the repo root for a custom build script first.
 
 ## Common bootstrap failures
 
 **Toolchain finished, Buildroot stage never ran.** `bootstrap.sh` builds the ct-ng toolchain
-first, then downloads/extracts Buildroot (`bootstrap.sh:89-199`). If the script is interrupted
-between those stages, `<workdir>/<platform>/toolchain/` and `.../<triple>/` are fully populated
-but `<workdir>/<platform>/build/<buildroot-version>/` doesn't exist yet — confirmed on this host's
-`generic-aarch64` tree. Symptom, from `./build`:
+first, then downloads/extracts Buildroot (`bootstrap.sh:89-199`). If interrupted between those
+stages, `<workdir>/<platform>/toolchain/` is fully populated but
+`<workdir>/<platform>/build/<buildroot-version>/` doesn't exist yet. Symptom, from `./build`:
+
 ```
 ./build: line 121: cd: <workdir>/<platform>/build/<buildroot-version>: No such file or directory
 ```
-**Fix: just re-run `./bootstrap.sh <platform>`.** The ct-ng stage is checkpointed with
-`.stamp_configured` / `.stamp_built1` / `.stamp_patched` / `.stamp_built2` marker files
-(`bootstrap.sh:93-152`) and the Buildroot stage is guarded by `if [ ! -d
-${BUILD_DIR}/${BUILDROOT_VERSION} ]` (`bootstrap.sh:156`) — re-running skips the completed
-toolchain entirely and picks up exactly where it stopped. No need to delete anything first.
+
+**Fix: just re-run `./bootstrap.sh <platform>`.** The ct-ng stage is checkpointed with marker
+files (`bootstrap.sh:93-152`) and the Buildroot stage is guarded by a directory-existence check
+(`bootstrap.sh:156`) — re-running skips the completed toolchain entirely and resumes where it
+stopped. No need to delete anything first.
 
 ## Building a local working tree without pushing it
 
-Verified 2026-09-16 (moddwarf-new, `build-records/plugins` attempts 030–034, five packages).
 The builder fetches every package from its recipe's `_SITE`/`_VERSION`, so testing a fix
 normally means pushing first. Buildroot's source override avoids that: put
 
 ```
-MOD_UTILITIES_OVERRIDE_SRCDIR = /home/you/MOD/Repos/Plugins/mod-utilities
+MOD_UTILITIES_OVERRIDE_SRCDIR = /home/you/Repos/mod-utilities
 ```
 
 (the `_VERSION` variable's prefix, i.e. the package name upper-cased with `-` → `_`) into
 `<WORKDIR>/<platform>/local.mk` — the file already exists, empty, in every bootstrapped tree —
-and run `./build <platform> <package>-rebuild`. The `-rebuild` matters: for an override
-package it re-rsyncs the tree into `build/<package>-custom/` before building; a plain
-`./build` after the first one reuses the stale copy. Three things to know:
+and run `./build <platform> <package>-rebuild`. The `-rebuild` matters: for an override package
+it re-rsyncs the tree into `build/<package>-custom/` before building; a plain `./build` after
+the first one reuses the stale copy. Three things to know:
 
 - **Recipe patches are not applied** to an override tree (Buildroot skips the patch step), so
   fold them into the tree first — which is what you want when the goal is to retire them.
 - **An override left in `local.mk` silently replaces the pin for every later build of that
   package on the host.** Empty the file when done.
-  `Plugins/mod-plugin-management/scripts/build-local.sh` wraps all of this and clears it on
-  exit.
 - The pinned-fetch path is still untested until the branch is pushed and `./build` runs once
-  without the override. Say so in the attempt record.
+  without the override. Treat it as unverified until then.
 
-The override rsync excludes `.git`, so a submodule checkout (e.g. `mod-audio-mixer-lv2`'s
-`dpf/`) comes along as plain files — fine for building.
+The override rsync excludes `.git`, so a submodule checkout comes along as plain files — fine
+for building.
 
 **A new plugin added to a multi-bundle package builds with the recipe unchanged, but only as
-far as `target/`.** Verified 2026-09-17 (attempt 055): a ninth directory added to
-`mod-pitchshifter`'s top-level Makefile was compiled and installed into
-`<WORKDIR>/<platform>/target/usr/lib/lv2/mod-polyoctaver.lv2` by the untouched recipe, in 4 s,
-because the recipe only runs the repo's `make` and `make install`. It was **not** copied to
+far as `target/`.** Adding a new sub-directory to a multi-plugin repo's top-level Makefile gets
+it compiled and installed into `<WORKDIR>/<platform>/target/usr/lib/lv2/` by the untouched
+recipe, because the recipe just runs the repo's `make`/`make install`. It is **not** copied to
 `<WORKDIR>/<platform>/plugins/`: `./build` copies exactly the bundles named in the recipe's
-`<PKG>_BUNDLES` line (`build:93`, `try_copy_plugin_bundles`), and `./validate` and `./publish`
-read the same line (`validate:38`, `publish:71`). Its "possibly missing from _BUNDLES" note
-only prints when `plugins/` was empty beforehand, so on a used tree nothing warns you. Take a
-trial bundle from `target/usr/lib/lv2/`, and add it to `_BUNDLES` before pinning the branch.
+`<PKG>_BUNDLES` line (`build:93`), and `./validate`/`./publish` read the same line. Its
+"possibly missing from `_BUNDLES`" warning only prints when `plugins/` was empty beforehand, so
+on a tree that's already been used nothing warns you. Take a trial bundle from
+`target/usr/lib/lv2/` and add it to `_BUNDLES` before pinning the branch.
 
 ## Common plugin-build failures
 
-**An interrupted `./build` is NOT safe to just re-run.** This is the opposite of the
-bootstrap advice above, and the difference matters: `bootstrap.sh` is checkpointed with
-stamp files, so re-running resumes correctly. A plugin build is not — it is a parallel
-`make`, and re-running it can silently produce a broken plugin that exits 0.
+**An interrupted `./build` is NOT safe to just re-run.** This is the opposite of the bootstrap
+advice above: `bootstrap.sh` is checkpointed, so re-running resumes correctly. A plugin build is
+a parallel `make` — re-running it can silently produce a broken plugin that exits 0.
 
-If a `make -j<N>` is killed partway (dropped SSH session, machine reset, Ctrl-C), every
-object file open for writing at that instant is left **zero bytes**. On a re-run, make
-compares mtimes, sees each zero-byte `.o` as *newer* than its source, skips recompiling it,
-and links the empty objects. The link succeeds. The build reports success.
-
-Confirmed on this host with `neural-amp-modeler-lv2`: a reset during the compile left 12 of
-16 objects at zero bytes, and the resumed build produced a **30 KB** `.so` where a sound one
-is ~1.5 MB, with the entire DSP engine missing:
-
-```
-$ readelf --dyn-syms -W neural_amp_modeler.so | awk '$7=="UND"' | grep NeuralAudio
-UND  _ZN11NeuralAudio17NeuralModelLoader14CreateFromFileERKNSt10filesystem7__cxx114pathEb
-$ readelf -d neural_amp_modeler.so | grep NEEDED
-    libstdc++.so.6  libm.so.6  libgcc_s.so.1  libpthread.so.0  libc.so.6
-```
-
-Nothing provides that symbol, so the plugin installs and then fails to instantiate on the
-device — a failure that only shows up on real hardware.
+If a `make -j<N>` is killed partway, every object file open for writing at that instant is left
+**zero bytes**. On a re-run, `make` compares mtimes, sees each zero-byte `.o` as *newer* than
+its source, skips recompiling it, and links the empty objects. The link succeeds. The build
+reports success. One real case: a reset mid-compile left several objects at zero bytes, and the
+resumed build produced a plugin binary roughly 50× smaller than a sound one, with an entire
+subsystem missing — `readelf --dyn-syms -W <so> | awk '$7=="UND"'` showed an undefined symbol
+nothing else in the link provides, so the plugin installed and then failed to instantiate on
+the device — a failure that only shows up on real hardware.
 
 **Fix: wipe the package build directory and rebuild.**
 
@@ -236,8 +201,7 @@ WORKDIR=<workdir> ./build <platform> <package>
 
 Wipe rather than delete just the empty objects: a kill mid-write can also leave *partially*
 written objects that are non-zero and pass a size check. Wiping costs only a compile — the
-download tarball and the toolchain are untouched, so Buildroot re-extracts from cache rather
-than re-downloading.
+download tarball and the toolchain are untouched.
 
 To check before rebuilding, rather than wiping unconditionally:
 
@@ -245,96 +209,72 @@ To check before rebuilding, rather than wiping unconditionally:
 find <workdir>/<platform>/build/<package>-<version> -name '*.o' -size 0
 ```
 
-**Verifying the download cache is not enough.** A separate, better-known failure leaves a
-corrupt tarball in `<workdir>/download/` when a build is interrupted mid-download. Proving
-that tarball sound (`gzip -t`, checking its contents) says nothing about the build tree —
-the two failures are independent and an interruption can cause either or both.
-
-**Never treat exit status 0 as acceptance for a cross-build.** You cannot run the binary on
-the host, so the exit code is nearly all you get for free — and as above, it lies. Check the
+**Never treat exit status 0 as acceptance for a cross-build.** You cannot run the binary on the
+host, so the exit code is nearly all you get for free — and as above, it lies. Check the
 artifact against the last known-good build:
 
-- `.so` size in the expected band (a collapse of one or two orders of magnitude means code
-  is missing)
+- `.so` size in the expected band (an order-of-magnitude drop means code is missing)
 - `readelf --dyn-syms` for unexpected `UND` symbols
-- `readelf -d` for an unexpected `NEEDED` entry — a library that exists on your build host
-  but not on the device
+- `readelf -d` for an unexpected `NEEDED` entry — a library on your build host but not the device
 - max GLIBC symbol version at or below the target device's glibc:
   `readelf --dyn-syms -W <so> | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1`
 
-**Dangling `.lv2` symlinks → `cp: cannot stat` at install time.** Most third-party recipes
-keep their modgui in the separate `mod-lv2-data` repository and reach it through symlinks in
-the package directory (`plugins/package/<pkg>/<bundle>.lv2 -> ../../../lv2-data/...`), copied
-over the built bundle with `cp -rL` in `<PKG>_INSTALL_TARGET_CMDS`. Those symlinks resolve
-only if the builder's `lv2-data` and `lv2-data-creative-commons` submodules are checked out.
-On a fresh clone they are not: counted 2026-09-16, **468 of the 476 symlinks under
-`plugins/package/` were dangling**, which breaks the install step of every recipe that uses
-the overlay (55 of the 103 recipes behind the stable catalog). Recipes whose modgui is
-in-repo (`neural-amp-modeler-lv2`, `mod-nam-loader`) are unaffected, which is why a NAM build
-can succeed on a host where bolliedelay's cannot. Fix once per clone:
+**Dangling `.lv2` symlinks → `cp: cannot stat` at install time.** Most third-party recipes keep
+their modgui in a separate repository and reach it through symlinks in the package directory,
+copied over the built bundle at install. Those symlinks only resolve if the builder's
+`lv2-data`/`lv2-data-creative-commons` submodules are checked out — on a fresh clone they
+aren't, which breaks the install step of any recipe using the overlay. Fix once per clone:
 
 ```bash
 git -C mod-plugin-builder submodule update --init      # ~650 MB
-find mod-plugin-builder/plugins/package -maxdepth 2 -type l ! -exec test -e {} \; -print | wc -l   # expect 0-4
+find mod-plugin-builder/plugins/package -maxdepth 2 -type l ! -exec test -e {} \; -print | wc -l   # expect 0
 ```
 
-The four that remain dangling on this host are absolute paths into a deleted
-`mod-plugin-commercial` checkout from the untracked `lead-trilogy`/`plexi-breed`/`rocker83`/
-`the-dude` packages — not yours to fix.
+Recipes whose modgui lives in-repo rather than through the overlay (`mod-nam-loader`, for
+example) are unaffected either way.
 
-**GitHub refuses anonymous clones under parallel load.** Fetching several packages at once over
-HTTPS produces `fatal: could not read Username for 'https://github.com'` and `fatal: expected
-flush after ref listing` — GitHub rate-limiting unauthenticated `git` traffic, not a missing
-repository (a genuinely missing repo says `Repository not found`). Seen 2026-09-16: 22 of 103
-clones failed this way, all succeeded serially over SSH. Buildroot's `$(call github,...)`
-recipes download archive tarballs and are less exposed, but `SITE_METHOD = git` recipes and
-the `DOWNLOAD_WITH_SUBMODULES` hook go through `git`. If you have a GitHub SSH key, route the
-traffic through it without touching global config:
+**GitHub rate-limits anonymous clones under parallel load.** Fetching several packages at once
+over HTTPS can produce `fatal: could not read Username for 'https://github.com'` or `fatal:
+expected flush after ref listing` — rate-limiting of unauthenticated `git` traffic, not a
+missing repository (a genuinely missing repo says `Repository not found`). Fetching serially,
+or over SSH if you have a GitHub key, avoids it:
 
 ```bash
 export GIT_TERMINAL_PROMPT=0 GIT_CONFIG_COUNT=1 \
        GIT_CONFIG_KEY_0=url.git@github.com:.insteadOf GIT_CONFIG_VALUE_0=https://github.com/
 ```
 
-**Rust recipes need `rustup` on the host, and flip its default.** The 16 `dm-*` recipes run
-`~/.cargo/bin/rustup default nightly` before `cargo build` and `rustup default stable` after
-(`plugins/package/dm-ds1/dm-ds1.mk`), so they need rustup with an undated `nightly` installed
-(the Docker image does this, a bare host does not) and must not run concurrently with any other
-cargo build on the machine. A host without `~/.cargo` cannot build any of them.
+**Rust recipes need `rustup` on the host, and flip its default.** Rust-based recipes run
+`rustup default nightly` before building and `rustup default stable` after, so they need
+`rustup` installed with an undated `nightly` toolchain available, and must not run concurrently
+with any other cargo build on the same machine. A host without `~/.cargo` cannot build them.
 
 ## Building without a toolchain: the Cloud Builder
 
 [builder.mod.audio](http://builder.mod.audio) (public source: `mod-audio/mod-cloud-builder`)
-cross-builds for the Duo, Duo X and Dwarf without any local setup, from four inputs:
-a FAUST `.dsp`, a Max gen~ export, a Pure Data patch (through hvcc) or a buildroot `.mk`
-recipe pointing at your repository (the same format as [RECIPES.md](RECIPES.md)). Behind the
-page it runs `mod-plugin-builder` with the `-new` toolchains, so what it produces is what this
-documentation describes. Facts verified 2026-09-24 to 2026-10-03 on the live site:
+cross-builds for the Duo, Duo X and Dwarf without any local setup, from four inputs: a FAUST
+`.dsp`, a Max gen~ export, a Pure Data patch (through hvcc), or a Buildroot `.mk` recipe
+pointing at your repository (the same format as [RECIPES.md](RECIPES.md)). Behind the page it
+runs `mod-plugin-builder` with the `-new` toolchains, so what it produces is what this
+documentation describes.
 
 - **It installs straight onto a unit connected over USB.** The page opens a WebSocket to the
-  unit at `ws://192.168.51.1/rplsocket`, served by mod-ui since **1.13.3**; an older unit
-  cannot receive builds from it. The unit's own version check is the `bin-compat` /
-  `platform` JSON it answers with on that socket.
+  unit at `ws://192.168.51.1/rplsocket`, served by mod-ui since **1.13.3** — an older unit
+  can't receive builds from it.
 - **Which URL works depends on the browser, and the site sorts that out itself.** Chromium
-  browsers (Chrome, Edge, Brave, Opera) refuse local-network connections from a plain
-  `http://` page since Chrome 147 (WebSockets; `fetch` since 142), silently: the page's socket
-  just closes with code 1006. So they are sent to `https://builder.mod.audio`, where Chrome
-  asks once for "access devices on your local network"; click **Allow**. Firefox and Safari
-  cannot open `ws://` from an `https://` page at all, so the https site sends them back to
-  `http://` (a 302 from nginx keyed on the user agent) and they stay there. If a connection
-  still fails in Safari on macOS 15 or later, check the per-app "Local Network" switch in
-  System Settings → Privacy & Security. Live since 2026-09-24; before that the http-only site
-  simply stopped connecting in current Chrome.
-- **A persistent build gets a share page**, `/install/<id>`, which installs the stored bundle
-  on a unit from the same browser rules. What it shows is read from your bundle's TTL (name,
-  author, brand, category) since 2026-09-28; see [METADATA.md](METADATA.md) § "Verified: what
-  the Cloud Builder share page shows". A build that failed for one target still gets a share
-  link, with a 0-byte tarball for that target (shown as a generic "custom plugin build").
-- **An `.mk` the builder rejects says "Invalid package version".** Seen with a repository
-  whose committed `.mk` had been emptied to a stub; the builder reads `<PKG>_VERSION` from the
-  pasted file, not from the repository.
-- **The Pure Data route is pinned to hvcc v0.14.0**, which has no `[expr]`/`[expr~]`
-  (added in v0.15.0). What that pin and a newer hvcc do on the devices, including the
-  SIMD rule for `[expr~]`, is in [CAVEATS.md](CAVEATS.md) § "Pure Data (hvcc) plugins on
-  MOD devices". The pin is `PURE_DATA_SKELETON_VERSION` in the builder's `webserver/server.py`;
-  the DPF and heavylib pins live in `builder/Dockerfile`.
+  browsers refuse local-network connections from a plain `http://` page (silently — the socket
+  just closes), so they're sent to `https://builder.mod.audio`, where Chrome asks once for
+  local-network device access; allow it. Firefox and Safari can't open `ws://` from an
+  `https://` page at all, so the https site redirects them back to `http://`, and they stay
+  there. On macOS, a stuck connection in Safari is worth checking against the per-app "Local
+  Network" switch in System Settings → Privacy & Security.
+- **A persistent build gets a share page**, `/install/<id>`, which installs the stored bundle on
+  a unit from the same browser rules. What it shows is read from your bundle's TTL (name,
+  author, brand, category) — see [METADATA.md](METADATA.md). A build that failed for one target
+  still gets a share link, with a 0-byte tarball for that target.
+- **An `.mk` the builder rejects says "Invalid package version."** This usually means the
+  pasted file's `<PKG>_VERSION` doesn't resolve — the builder reads it from the pasted file, not
+  from the repository.
+- **The Pure Data route is pinned to hvcc v0.14.0**, which has no `[expr]`/`[expr~]` (added in
+  v0.15.0). What that pin and a newer hvcc do on the devices is in [CAVEATS.md](CAVEATS.md)
+  § "Pure Data (hvcc) plugins on MOD devices".

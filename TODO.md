@@ -47,12 +47,11 @@ a gap gets closed: remove the inline comment, check the box here.
 - [x] Document the Docker path — `docker-mount.sh`'s three-case logic written up from source, plus
       what it gets you for macOS/Windows (a Linux container, not a native bootstrap)
 - [x] macOS / Windows story — answered above: Docker is the real answer, no native path exists
-- [x] Realistic bootstrap time and disk usage — disk usage measured per-platform on this host;
-      **time now measured too** (2026-09-10): `modduo-new` 30 min, `modduox-new` 32 min, both
-      bootstrapped from nothing in one attended tmux session, plus the Qt5 benign-`error:`
-      noise and the RAM-is-the-constraint note
+- [x] Realistic bootstrap time and disk usage — disk usage measured per-platform; time now
+      measured too: `modduo-new` 30 min, `modduox-new` 32 min, single uninterrupted runs, plus
+      the Qt5 benign-`error:` noise and the RAM-is-the-constraint note
 - [x] Common bootstrap failures and fixes — the toolchain-finished-but-Buildroot-never-ran failure
-      mode, confirmed live on this host's `generic-aarch64` tree, with the exact fix
+      mode, confirmed live on a `generic-aarch64` tree, with the exact fix
 - [x] Add the `-new` variants — folded into a fuller platform-suffix table (`-new`/`-static`/
       `-debug`/`-kernel`/`generic-aarch64`/`-gcc15`), sourced from `.common`'s actual case logic
 - [x] Recommend `-new` as the default — carried into the same table
@@ -71,14 +70,13 @@ a gap gets closed: remove the inline comment, check the box here.
 ## 3. VALIDATING.md — thorough
 
 - [ ] What the Carla bridge runtime test (stage 4) actually asserts — instantiate/run/cleanup only, or more
-      (needs a `generic-x86_64` bootstrap on this host; none yet)
+      (needs a `generic-x86_64` bootstrap; none yet)
 - [ ] Whether stage-4 Valgrind findings are usually actionable or mostly noise on LV2 hosts
 
 ## 4. INSTALLING.md — still mostly gaps
 
 - [x] Connecting to a device — "Reaching the unit" (2026-10-03)
 - [ ] MOD Desktop install path — **currently marked explicitly unverified.** Where do bundles go?
-      (mod-desktop source is not in this workspace)
 - [x] What `/sdk/update` does — TTL re-read of a loaded bundle only (2026-10-03, from source)
 - [x] Confirming a plugin loaded (2026-09-16)
 - [x] Removing a plugin — `/package/uninstall` or `rm -rf` + restart (2026-10-03)
