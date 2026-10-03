@@ -2,8 +2,7 @@
 
 This chapter is about behaviour, not API: what the host does to your plugin, what it will not
 do for you, and what the devices can afford. Everything in it was either measured on a device
-or read from `mod-host` at `f14a230` (master, what ships), with the line cited. The short
-version:
+or read from mod-host source, cited in each section's verification block. The short version:
 
 - `run()` must not allocate, lock, or do I/O. Measure that with a counter, not a code review.
 - The budget is one block period shared with the whole pedalboard, and the Dwarf and Duo are
@@ -27,10 +26,8 @@ for the first time. Anything unbounded belongs on the worker thread.
 yours will xrun on your overage, and it looks like their fault.
 
 **Measure it; don't reason about it.** Interpose `malloc`/`free`/`pthread_mutex_lock` in a test
-harness, flag the audio thread, and count. A worked harness is `mod-nam-loader/tools/rt_probe.cpp`:
-paces the callback at the block deadline, runs the worker separately, reports block-time
-percentiles plus allocation/lock counts. Cross-compile it with the platform toolchain — that's
-the only way to get honest numbers for an A35.
+harness, flag the audio thread, and count. Cross-compile the harness with the platform toolchain
+— that's the only way to get honest numbers for an A35.
 
 Two lessons worth passing on:
 
@@ -46,26 +43,41 @@ Two lessons worth passing on:
 <!-- GAP: whether there's an enforced or advisory CPU limit per pedalboard is unconfirmed; what a
      developer actually sees when a plugin xruns (mod-xrun) is undocumented -->
 
+<details>
+<summary>Verification</summary>
+
+A worked harness is `mod-nam-loader/tools/rt_probe.cpp`: paces the callback at the block
+deadline, runs the worker separately, reports block-time percentiles plus allocation/lock
+counts.
+
+</details>
+
 ## Denormals are flushed by the host
 
 You don't need to set flush-to-zero yourself, and setting it does no harm. mod-host installs a
-JACK thread-init callback (`mod-host/src/effects.c:4094,5410`) that sets FZ in `FPCR` on
-AArch64, the matching bit of `FPSCR` on the 32-bit Duo, and both FTZ and DAZ in `MXCSR` on x86
-(`effects.c:2912-2926`) on every real-time thread JACK creates — so every thread that calls
-your `run()` has denormals off before the first cycle. **The worker thread is not a JACK
-thread and does not get this** — set it yourself if you do heavy float work there (IR
-pre-computation, model warm-up).
+JACK thread-init callback that sets FZ in `FPCR` on AArch64, the matching bit of `FPSCR` on the
+32-bit Duo, and both FTZ and DAZ in `MXCSR` on x86, on every real-time thread JACK creates — so
+every thread that calls your `run()` has denormals off before the first cycle. **The worker
+thread is not a JACK thread and does not get this** — set it yourself if you do heavy float work
+there (IR pre-computation, model warm-up).
 
 Your own build's `-ffast-math`/`crtfastmath` only sets the bit on the thread that loads the
 bundle, and `FPCR` is per-thread — don't rely on it outside `mod-host`. On another host or a
 desktop, use the usual DC-offset trick in feedback paths or set FZ in `run()` yourself.
 
+<details>
+<summary>Verification</summary>
+
+AArch64/Duo FZ init: `mod-host/src/effects.c:4094,5410`. x86 FTZ/DAZ: `effects.c:2912-2926`.
+Read at `f14a230` (master, what ships).
+
+</details>
+
 ## Latency is not reported
 
 `mod-host` has no latency support: it never resolves an `lv2:latency` designation, never reads
-`lv2:reportsLatency`, never calls `jack_port_set_latency_range` (`effects.c:4649,5103-5147`
-and a source-wide grep for `latency`). A latency output port is just an ordinary control
-output — nobody compensates, the user can't see it. Consequences:
+`lv2:reportsLatency`, never calls `jack_port_set_latency_range`. A latency output port is just
+an ordinary control output — nobody compensates, the user can't see it. Consequences:
 
 - Keep latency low; nothing hides it. A look-ahead limiter or spectral effect adds its frames
   to everything downstream, and to the player's feel.
@@ -74,10 +86,17 @@ output — nobody compensates, the user can't see it. Consequences:
 - If your plugin has fixed, known latency, say so in its description and modgui. That's the
   only channel.
 
+<details>
+<summary>Verification</summary>
+
+`effects.c:4649,5103-5147` and a source-wide grep for `latency`, at `f14a230`.
+
+</details>
+
 ## Block size, sample rate and what can change
 
 `mod-host` reads block size and sample rate from JACK once and hands them to every plugin via
-`opts:options` at instantiate (`effects.c:3961-3964,4233-4287`):
+`opts:options` at instantiate:
 
 | Option | Value |
 |---|---|
@@ -89,10 +108,17 @@ output — nobody compensates, the user can't see it. Consequences:
 `bufsz:fixedBlockLength`/`powerOf2BlockLength`/`boundedBlockLength` are passed but never
 enforced — mod-host just relies on JACK running a fixed power-of-two period. **The period can
 change while you're instantiated**: on a change, mod-host updates its buffers and, if you
-export `opts:interface`, calls your `set()` with the new sizes (`effects.c:990-1054`); without
-it, you simply start receiving `run(nframes)` with the new count. Size for `maxBlockLength` at
-instantiate and either implement `opts:interface` or chunk what you allocated
-(`mod-utilities/Shared_files/BufferSize.h` is a worked example). Never hardcode `n_samples == 128`.
+export `opts:interface`, calls your `set()` with the new sizes; without it, you simply start
+receiving `run(nframes)` with the new count. Size for `maxBlockLength` at instantiate and either
+implement `opts:interface` or chunk what you allocated. Never hardcode `n_samples == 128`.
+
+<details>
+<summary>Verification</summary>
+
+Options populated at `effects.c:3961-3964,4233-4287`. Resize path at `effects.c:990-1054`.
+`mod-utilities/Shared_files/BufferSize.h` is a worked chunking example.
+
+</details>
 
 ## Port conventions
 
@@ -104,11 +130,17 @@ points is safe — pedalboards and presets address by symbol, not index. (The on
 
 **Ranges are enforced by the host; scale points are not.** A value arriving via `param_set`
 (what mod-ui sends) is clamped to `mod:minimum`/`maximum`, falling back to
-`lv2:minimum`/`maximum` (`effects.c:4833-4862`). Nothing is rounded on that path — an
-`lv2:integer` or `lv2:enumeration` port can receive 2.4, unsnapped. Rounding only happens for
-CV-addressed and MIDI-mapped ports; values from Control Chain or a change-request are neither
-clamped nor rounded. Treat every control input as a float that may be off-grid and snap it
-yourself.
+`lv2:minimum`/`maximum`. Nothing is rounded on that path — an `lv2:integer` or
+`lv2:enumeration` port can receive 2.4, unsnapped. Rounding only happens for CV-addressed and
+MIDI-mapped ports; values from Control Chain or a change-request are neither clamped nor
+rounded. Treat every control input as a float that may be off-grid and snap it yourself.
+
+<details>
+<summary>Verification</summary>
+
+Clamp path at `effects.c:4833-4862`, `f14a230`.
+
+</details>
 
 ## State and persistence
 
@@ -148,6 +180,14 @@ transition into bypass, MIDI inputs get all-notes-off/all-sound-off on all 16 ch
 **Declare an `lv2:enabled` input port and you own bypass yourself** — the host writes 0.0/1.0
 to that port instead and processes normally. This is the only way to get a click-free or
 tail-preserving bypass.
+
+<details>
+<summary>Verification</summary>
+
+Confirmed from `mod-host/src/effects.c` at `f14a230`: hard `memcpy` bypass, zeroed outputs for
+sourceless plugins, all-notes-off/all-sound-off transition, `lv2:enabled` opt-out.
+
+</details>
 
 ## What a plugin costs on each device, and how to measure it
 

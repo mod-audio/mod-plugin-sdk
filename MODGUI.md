@@ -138,14 +138,21 @@ ignore them and hardcode your text. Setting `modgui:brand` and `modgui:label` is
 regardless, because they are what the pedal displays as its name.
 
 **`modgui:model`, `modgui:panel`, `modgui:knob` and `modgui:color` are parsed but mod-ui does
-nothing with them itself.** Read at `7764e1ff` (1.14 RC4): `utils/utils_lilv.cpp:2476-2500` reads
-all four into the GUI struct, and their only consumer is `html/js/modgui.js:1701-1712`, which
-injects them as Mustache variables (`{{model}}`, `{{panel}}`, `{{knob}}`, `{{color}}`) when
-rendering **your own** `iconTemplate` / `settingsTemplate`. No stylesheet or script in mod-ui
-reads them, and the default pedal template does not use them (`git grep` for the four variables in
-templates: no hits). So they have an effect exactly when your template or CSS uses the variable,
-which the old mod-sdk templates do; otherwise they are inert. Declare them for those templates,
-skip them for a hand-written one.
+nothing with them itself.** They're read into the GUI struct, and their only consumer injects
+them as Mustache variables (`{{model}}`, `{{panel}}`, `{{knob}}`, `{{color}}`) when rendering
+**your own** `iconTemplate` / `settingsTemplate`. No stylesheet or script in mod-ui reads them,
+and the default pedal template does not use them. So they have an effect exactly when your
+template or CSS uses the variable, which the old mod-sdk templates do; otherwise they are inert.
+Declare them for those templates, skip them for a hand-written one.
+
+<details>
+<summary>Verification</summary>
+
+Read at `7764e1ff` (1.14 RC4): parsed into the GUI struct at `utils/utils_lilv.cpp:2476-2500`;
+injected as Mustache variables at `html/js/modgui.js:1701-1712`; a `git grep` for the four
+variable names across mod-ui's templates returns no hits outside that injection path.
+
+</details>
 
 ---
 

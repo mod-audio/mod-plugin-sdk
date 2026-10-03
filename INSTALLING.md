@@ -32,21 +32,18 @@ cd ~/mod-workdir/<platform>/plugins
 tar czf - mybundle.lv2 | base64 | curl -F 'package=@-' http://192.168.51.1/sdk/install; echo
 ```
 
-The `/sdk/install` endpoint is live in current mod-ui (`SDKEffectInstaller`,
-`mod/webserver.py:833-860` at `7764e1ff`). It base64-decodes the upload, untars it, and for each
-bundle: removes an existing bundle of the same name from mod-host and deletes its directory
-(presets stored *inside* that bundle go with it), moves the new one into `/root/.lv2`, and sends
-`bundle_add` to mod-host (`install_bundles_in_tmp_dir`, `webserver.py:83-157`; `host.py:2246-2256`).
-Then it broadcasts a `rescan` to the browser, so no service restart is needed. A URI that was
-removed and not reinstalled is dropped from the favourites and banks are re-saved; pedalboard
-files are never edited (`webserver.py:120-136`). The reply is
+The `/sdk/install` endpoint is live in current mod-ui. It base64-decodes the upload, untars it,
+and for each bundle: removes an existing bundle of the same name from mod-host and deletes its
+directory (presets stored *inside* that bundle go with it), moves the new one into `/root/.lv2`,
+and sends `bundle_add` to mod-host. Then it broadcasts a `rescan` to the browser, so no service
+restart is needed. A URI that was removed and not reinstalled is dropped from the favourites and
+banks are re-saved; pedalboard files are never edited. The reply is
 `{"ok": true, "removed": [...uris], "installed": [...uris]}`, or `ok: false` with an `error`.
 
-`/sdk/update` (`SDKEffectUpdater`, `webserver.py:862-894`) is a different, narrower thing: given a
-`bundle` path and a `uri` already loaded, it re-reads the bundle's TTL into mod-ui's lilv world
-(`host.py:2279-2290`) and broadcasts the same `rescan`. It writes no files and tells mod-host
-nothing, so it refreshes metadata and modgui after you edited a `.ttl` in place over SSH; it does
-not pick up a new `.so`. For a new binary use `/sdk/install`.
+`/sdk/update` is a different, narrower thing: given a `bundle` path and a `uri` already loaded,
+it re-reads the bundle's TTL into mod-ui's lilv world and broadcasts the same `rescan`. It
+writes no files and tells mod-host nothing, so it refreshes metadata and modgui after you edited
+a `.ttl` in place over SSH; it does not pick up a new `.so`. For a new binary use `/sdk/install`.
 
 **It will not replace a plugin that is loaded.** If the current pedalboard holds an instance, the
 reply is `{"ok": false, "error": "Plugin is currently in use, cannot remove", "installed": [], "removed": []}`
@@ -64,15 +61,13 @@ scp -O -r mybundle.lv2 root@192.168.51.1:/root/.lv2/
 ssh root@192.168.51.1 "systemctl restart jack2 mod-ui"
 ```
 
-`/root/.lv2` is mod-ui's user-plugin directory (`LV2_PLUGIN_DIR`, defaults to `~/.lv2` and
-mod-ui runs as root on-device — confirmed in `mod-ui/mod/settings.py`). Unlike the
+`/root/.lv2` is mod-ui's user-plugin directory, and mod-ui runs as root on-device. Unlike the
 curl+base64 method above, a plain `scp` doesn't trigger a live rescan, so both services need
 restarting: `mod-ui` to rebuild its plugin list, and `jack2` because mod-host — the actual LV2
 host process — loads its LV2 world once at startup and is tied to the jack2 service, so it
-won't see the new bundle until it restarts too. Confirmed in `mod-ui/mod/webserver.py`:
-`SystemCleanup` restarts exactly this pair (`jack2` + `mod-ui`) whenever the plugins directory
-changes. The `-O` flag forces scp's legacy protocol — needed because current scp/OpenSSH
-defaults to SFTP, which the device's older sshd doesn't support.
+won't see the new bundle until it restarts too. The `-O` flag forces scp's legacy protocol —
+needed because current scp/OpenSSH defaults to SFTP, which the device's older sshd doesn't
+support.
 
 **Two corrections to the upstream README, which has this wrong:**
 
@@ -82,6 +77,18 @@ defaults to SFTP, which the device's older sshd doesn't support.
    address comes from and what to use over Wi-Fi.
 
 <!-- GAP: MOD Desktop install path unverified — where do bundles go there? -->
+
+<details>
+<summary>Verification</summary>
+
+`/sdk/install`: `SDKEffectInstaller`, `mod/webserver.py:833-860` at `7764e1ff`; untar/move/
+bundle_add path at `install_bundles_in_tmp_dir`, `webserver.py:83-157`; `host.py:2246-2256`;
+favourites/banks handling `webserver.py:120-136`. `/sdk/update`: `SDKEffectUpdater`,
+`webserver.py:862-894`; TTL re-read `host.py:2279-2290`. `/root/.lv2` as `LV2_PLUGIN_DIR`,
+defaults and root execution confirmed in `mod-ui/mod/settings.py`. Restart pairing on plugin
+directory change: `SystemCleanup` in `mod-ui/mod/webserver.py`.
+
+</details>
 
 Verified again 2026-09-16 on a Dwarf running 1.14.0.3333, 25 bundles at once: `scp -O -r` into
 `/root/.lv2/` + `systemctl restart jack2 mod-ui`, then `lv2ls` lists every URI, mod-ui's
@@ -127,9 +134,17 @@ Verified again 2026-09-16 on a Dwarf running 1.14.0.3333, 25 bundles at once: `s
       instantiate it (HardwareBypass does that on a Dwarf, by design: it is published for Duo and
       Duo X only, whose bypass relay it drives — see [CAVEATS.md](CAVEATS.md))
 - [x] Removing a plugin: the Web UI's plugin-bar "remove" posts a JSON list of bundle paths to
-      `/package/uninstall` (`webserver.py:1331-1366`), which must be under `/root/.lv2`; mod-ui
-      unloads the bundle from mod-host and `rmtree`s it. By hand: `rm -rf /root/.lv2/<bundle>.lv2`
-      over SSH and `systemctl restart jack2 mod-ui`. Either way pedalboards that used the URI keep
-      referring to it and show the plugin as missing
+      `/package/uninstall`, which must be under `/root/.lv2`; mod-ui unloads the bundle from
+      mod-host and `rmtree`s it. By hand: `rm -rf /root/.lv2/<bundle>.lv2` over SSH and
+      `systemctl restart jack2 mod-ui`. Either way pedalboards that used the URI keep referring
+      to it and show the plugin as missing
+
+  <details>
+  <summary>Verification</summary>
+
+  `webserver.py:1331-1366`
+
+  </details>
+
 - [x] Reinstalling over an existing version: needed only when another copy of the same URI is
       installed (then the higher version wins); see above

@@ -129,19 +129,33 @@ is a vendored upstream patch series kept in its original numbering, not a second
 
 `Config.in` only exists under `plugins-dep/package*/` and `global-packages/`, and only for
 Buildroot *toolchain dependencies* (JUCE, DPF, carla-backend, libmodla, etc.) that must appear
-in Buildroot's menuconfig/defconfig system — `plugins-dep/Config.in` sources each one explicitly.
-**No plugin recipe under `plugins/package/` has a `Config.in`, and none needs one.** Individual
-plugin packages are discovered by a plain path glob —
-`plugins-dep/external.mk:5`: `include $(sort $(wildcard $(BR2_EXTERNAL_PLUGINS_DEP)/../plugins/package/*/*.mk))`
-— and `./build <platform> <plugin>` (`build:79-96`) invokes that package's Buildroot target
-directly by name, with no menuconfig selection step in between.
+in Buildroot's menuconfig/defconfig system. **No plugin recipe under `plugins/package/` has a
+`Config.in`, and none needs one.** Individual plugin packages are discovered by a plain path
+glob, and `./build <platform> <plugin>` invokes that package's Buildroot target directly by
+name, with no menuconfig selection step in between.
+
+<details>
+<summary>Verification</summary>
+
+`plugins-dep/Config.in` sources each toolchain dependency explicitly. Plugin discovery glob:
+`plugins-dep/external.mk:5`: `include $(sort $(wildcard $(BR2_EXTERNAL_PLUGINS_DEP)/../plugins/package/*/*.mk))`.
+Direct target invocation: `build:79-96`.
+
+</details>
 
 ## Pointing the builder at a recipe outside its own tree
 
-No — not with a documented hook. `BR2_EXTERNAL_PLUGINS_DEP` is set by `.common:155` to
-`${SOURCE_DIR}/plugins-dep`, where `SOURCE_DIR` (`.common:154`) is simply `$(pwd)` — the
-mod-plugin-builder checkout you're standing in. Since the glob above resolves relative to that
-same path (`.../plugins-dep/../plugins/package/`), your recipe has to live at
-`plugins/package/<name>/` inside a checkout of this repo. Your plugin's actual *source* can live
-anywhere — `_SITE` accepts any git URL or local path (see "Do not ship a local-path `_SITE`"
-above) — it's specifically the `.mk` recipe that's pinned to this repo's own directory layout.
+No — not with a documented hook. Your recipe has to live at `plugins/package/<name>/` inside a
+checkout of this repo. Your plugin's actual *source* can live anywhere — `_SITE` accepts any git
+URL or local path (see "Do not ship a local-path `_SITE`" above) — it's specifically the `.mk`
+recipe that's pinned to this repo's own directory layout.
+
+<details>
+<summary>Verification</summary>
+
+`BR2_EXTERNAL_PLUGINS_DEP` is set by `.common:155` to `${SOURCE_DIR}/plugins-dep`, where
+`SOURCE_DIR` (`.common:154`) is simply `$(pwd)` — the mod-plugin-builder checkout you're
+standing in. The discovery glob above resolves relative to that same path
+(`.../plugins-dep/../plugins/package/`).
+
+</details>

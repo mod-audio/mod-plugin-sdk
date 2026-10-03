@@ -1,29 +1,37 @@
 # Categories
 
 How a plugin is classified decides which tab it appears under in the device's plugin bar and in
-the Store, and what the plugin info dialog prints as its category. The mapping is read from
-`mod-ui/utils/utils_lilv.cpp` (`_get_plugin_categories`, `:1267-1424`, tables `:568-608`) and the
-tab lists in `html/index.html` at `7764e1ff` (1.14 RC4), 2026-10-03.
+the Store, and what the plugin info dialog prints as its category.
 
 ## The rule in one paragraph
 
 Declare **one** class. A `mod:` class if one fits, otherwise the standard LV2 class. mod-ui maps
 whichever it recognises to a short list, `["Top", "Sub"]`, and only the first element is used for
-tabs (`html/js/effects.js:274,331`); the info dialog prints it (`effects.js:441`). A plugin with no
-recognised class gets an empty list, appears only under "All", and its dialog says "None". A plugin
-with several classes gets one of them, not a union: the **first `mod:` class found wins and stops the
-scan** (`utils_lilv.cpp:1413-1415`), and among plain LV2 classes the last one lilv happens to iterate
-overwrites the earlier ones (`:1291-1374`, no `break`), so "several" means "unpredictable".
-`modpedal:Pedalboard` marks the bundle as not a plugin (`:1283-1289`).
+tabs; the info dialog prints it. A plugin with no recognised class gets an empty list, appears
+only under "All", and its dialog says "None". A plugin with several classes gets one of them, not
+a union: the **first `mod:` class found wins and stops the scan**, and among plain LV2 classes
+the last one lilv happens to iterate overwrites the earlier ones, so "several" means
+"unpredictable". `modpedal:Pedalboard` marks the bundle as not a plugin.
 
 ## The tabs
 
-Device plugin bar (`index.html:795-811`): Favorites, All, Control Voltage, Delay, Distortion,
-Dynamics, Filter, Generator, MIDI Utility, Modulator, Reverb, Simulator, Spatial, Spectral,
-Utility. The Store (`index.html:882-897`) shows the same without Favorites. Two more exist in the
-code but are hidden: Max gen~ and Camomile (`display:none`; a loop-variable bug in
-`effects.js:288-293` ties the Max gen~ tab's visibility to the Camomile count, so it never shows).
-Sub-categories are never a tab; they only appear in the info dialog.
+Device plugin bar: Favorites, All, Control Voltage, Delay, Distortion, Dynamics, Filter,
+Generator, MIDI Utility, Modulator, Reverb, Simulator, Spatial, Spectral, Utility. The Store
+shows the same without Favorites. Two more exist in the code but are hidden: Max gen~ and
+Camomile (a loop-variable bug ties the Max gen~ tab's visibility to the Camomile count, so it
+never shows). Sub-categories are never a tab; they only appear in the info dialog.
+
+<details>
+<summary>Verification</summary>
+
+Read from `mod-ui/utils/utils_lilv.cpp` (`_get_plugin_categories`, `:1267-1424`, tables
+`:568-608`) and `html/index.html` at `7764e1ff` (1.14 RC4), 2026-10-03. Tab-element selection:
+`html/js/effects.js:274,331`; dialog print: `effects.js:441`. First-`mod:`-class-wins scan:
+`utils_lilv.cpp:1413-1415`. Plain-LV2-class overwrite (no `break`): `:1291-1374`.
+`modpedal:Pedalboard` bundle-type marker: `:1283-1289`. Device tab list: `index.html:795-811`.
+Store tab list: `index.html:882-897`. Camomile/Max-gen~ visibility bug: `effects.js:288-293`.
+
+</details>
 
 ## `mod:` classes
 

@@ -47,7 +47,7 @@ submodules: `git submodule init && git submodule update`.
 ## Platform name suffixes
 
 A `<platform>` argument is not just a device name — suffixes change which toolchain and which
-Buildroot config get used (`mod-plugin-builder/.common:45-71`):
+Buildroot config get used:
 
 | Suffix | Effect |
 |---|---|
@@ -60,6 +60,13 @@ Buildroot config get used (`mod-plugin-builder/.common:45-71`):
 
 `darkglass-anagram-gcc15` and `moddwarf-gcc15` are further one-off custom targets, each with
 their own dedicated toolchain (ct-ng 1.28, GCC 15).
+
+<details>
+<summary>Verification</summary>
+
+`mod-plugin-builder/.common:45-71`
+
+</details>
 
 ## Docker path
 
@@ -129,8 +136,8 @@ entry point** — grep the repo root for a custom build script first.
 ## Common bootstrap failures
 
 **Toolchain finished, Buildroot stage never ran.** `bootstrap.sh` builds the ct-ng toolchain
-first, then downloads/extracts Buildroot (`bootstrap.sh:89-199`). If interrupted between those
-stages, `<workdir>/<platform>/toolchain/` is fully populated but
+first, then downloads/extracts Buildroot. If interrupted between those stages,
+`<workdir>/<platform>/toolchain/` is fully populated but
 `<workdir>/<platform>/build/<buildroot-version>/` doesn't exist yet. Symptom, from `./build`:
 
 ```
@@ -138,9 +145,16 @@ stages, `<workdir>/<platform>/toolchain/` is fully populated but
 ```
 
 **Fix: just re-run `./bootstrap.sh <platform>`.** The ct-ng stage is checkpointed with marker
-files (`bootstrap.sh:93-152`) and the Buildroot stage is guarded by a directory-existence check
-(`bootstrap.sh:156`) — re-running skips the completed toolchain entirely and resumes where it
-stopped. No need to delete anything first.
+files and the Buildroot stage is guarded by a directory-existence check — re-running skips the
+completed toolchain entirely and resumes where it stopped. No need to delete anything first.
+
+<details>
+<summary>Verification</summary>
+
+Toolchain-then-Buildroot sequencing: `bootstrap.sh:89-199`. Checkpoint markers: `:93-152`.
+Directory-existence guard: `:156`.
+
+</details>
 
 ## Building a local working tree without pushing it
 
@@ -172,10 +186,17 @@ far as `target/`.** Adding a new sub-directory to a multi-plugin repo's top-leve
 it compiled and installed into `<WORKDIR>/<platform>/target/usr/lib/lv2/` by the untouched
 recipe, because the recipe just runs the repo's `make`/`make install`. It is **not** copied to
 `<WORKDIR>/<platform>/plugins/`: `./build` copies exactly the bundles named in the recipe's
-`<PKG>_BUNDLES` line (`build:93`), and `./validate`/`./publish` read the same line. Its
-"possibly missing from `_BUNDLES`" warning only prints when `plugins/` was empty beforehand, so
-on a tree that's already been used nothing warns you. Take a trial bundle from
-`target/usr/lib/lv2/` and add it to `_BUNDLES` before pinning the branch.
+`<PKG>_BUNDLES` line, and `./validate`/`./publish` read the same line. Its "possibly missing
+from `_BUNDLES`" warning only prints when `plugins/` was empty beforehand, so on a tree that's
+already been used nothing warns you. Take a trial bundle from `target/usr/lib/lv2/` and add it
+to `_BUNDLES` before pinning the branch.
+
+<details>
+<summary>Verification</summary>
+
+`build:93`
+
+</details>
 
 ## Common plugin-build failures
 
@@ -275,6 +296,7 @@ documentation describes.
 - **An `.mk` the builder rejects says "Invalid package version."** This usually means the
   pasted file's `<PKG>_VERSION` doesn't resolve — the builder reads it from the pasted file, not
   from the repository.
-- **The Pure Data route is pinned to hvcc v0.14.0**, which has no `[expr]`/`[expr~]` (added in
-  v0.15.0). What that pin and a newer hvcc do on the devices is in [CAVEATS.md](CAVEATS.md)
-  § "Pure Data (hvcc) plugins on MOD devices".
+- **The Pure Data route builds with hvcc v0.17.2 as of this writing** (previously pinned to
+  v0.14.0, which had no `[expr]`/`[expr~]`). What the current hvcc version does and does not
+  support on the devices is in [CAVEATS.md](CAVEATS.md) § "Pure Data (hvcc) plugins on MOD
+  devices".
