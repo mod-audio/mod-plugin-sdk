@@ -267,15 +267,19 @@
     which is why one plugin bundle works across the range.</p>
 
   <table>
-    <thead><tr><th>Target</th><th>Architecture</th><th>Product</th></tr></thead>
+    <thead><tr><th>Target</th><th>Hardware</th><th>Product</th></tr></thead>
     <tbody>
-      <tr><td class="mono">modduo</td><td>ARMv7 (Cortex-A7)</td><td>MOD Duo</td></tr>
-      <tr><td class="mono">modduox</td><td>AArch64 (Cortex-A53)</td><td>MOD Duo X</td></tr>
-      <tr><td class="mono">moddwarf</td><td>AArch64 (Cortex-A35)</td><td>MOD Dwarf</td></tr>
+      <tr><td class="mono">modduo</td><td>AllWinner A20, dual-core Cortex-A7 (ARMv7)</td><td>MOD Duo (2016, NAND) &amp; MOD Duo 2020 (eMMC) &mdash; same CPU, same target</td></tr>
+      <tr><td class="mono">modduox</td><td>RockChip RK3399, big.LITTLE: 2&times; Cortex-A72 + 4&times; Cortex-A53 (AArch64)</td><td>MOD Duo X</td></tr>
+      <tr><td class="mono">moddwarf</td><td>RockChip PX30, quad-core Cortex-A35 (AArch64)</td><td>MOD Dwarf</td></tr>
       <tr><td class="mono">generic-x86_64</td><td>x86-64</td><td>Desktop — for building and validating</td></tr>
     </tbody>
   </table>
   <div class="note">
+    <code>modduox</code>'s toolchain compiles for the Cortex-A53 cores specifically
+    (<code>CT_ARCH_CPU=cortex-a53</code>), not the Duo X's two Cortex-A72 cores &mdash; code still
+    runs on either, it's just not tuned for the A72's pipeline. A 2019 pre-release "Limited
+    Edition" Duo X used an NXP i.MX8 chip instead; it was superseded by the RK3399 unit above.
     The Dwarf's Cortex-A35 is in-order and slower per clock than the Duo X's A53, so it is the
     target to size a CPU budget against. Most targets also have a <code>-new</code> variant
     (<code>moddwarf-new</code> and friends) on a newer toolchain &mdash; GCC 9.4.0, glibc 2.27

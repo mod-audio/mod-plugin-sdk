@@ -92,14 +92,18 @@ Pure Data plugins.
 
 From `mod-plugin-builder/toolchain/<target>.config`:
 
-| Target | CPU | GCC | glibc |
+| Target | CPU (`CT_ARCH_CPU`) | GCC | glibc |
 |---|---|---|---|
 | `modduo` | Cortex-A7 (ARMv7) | ct-ng default (older) | — |
-| `modduox` | Cortex-A53 | ct-ng default (older) | — |
+| `modduox` | Cortex-A53\* | ct-ng default (older) | — |
 | `moddwarf` | Cortex-A35 | ct-ng default (older) | 2.27 |
 | `modduo-new` | Cortex-A7 (ARMv7) | 9.4.0 | 2.27 |
-| `modduox-new` | Cortex-A53 | 9.4.0 | 2.27 |
+| `modduox-new` | Cortex-A53\* | 9.4.0 | 2.27 |
 | `moddwarf-new` | Cortex-A35 | 9.4.0 | 2.27 |
+
+\* The Duo X's chip (RockChip RK3399) is big.LITTLE — 2× Cortex-A72 plus these 4× Cortex-A53 —
+but `modduox`/`modduox-new` compile for the A53 cores only. Code still runs on the A72 cores,
+it's just not tuned for them; don't assume A72-class headroom when budgeting CPU.
 
 The plain targets pin no GCC version, so they take crosstool-NG's default for their config
 vintage; the `-new` targets pin 9.4.0 explicitly. **GCC 9.4.0 means C++17 is comfortable and C++20

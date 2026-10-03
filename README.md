@@ -87,16 +87,26 @@ The same stack runs on every MOD product, which is why one plugin bundle works a
 
 ### Targets
 
-| Target | Architecture | Product |
+| Target | Hardware | Product |
 |---|---|---|
-| `modduo` | ARMv7 (Cortex-A7) | MOD Duo |
-| `modduox` | AArch64 (Cortex-A53) | MOD Duo X |
-| `moddwarf` | AArch64 (**Cortex-A35**) | MOD Dwarf |
+| `modduo` | AllWinner A20, dual-core Cortex-A7 (ARMv7) | MOD Duo — the original 2016 unit (NAND storage) and MOD Duo 2020 (eMMC storage) are the same CPU and the same build target |
+| `modduox` | RockChip RK3399, big.LITTLE: 2× Cortex-A72 + 4× Cortex-A53 (AArch64) | MOD Duo X |
+| `moddwarf` | RockChip PX30, quad-core Cortex-A35 (AArch64) | MOD Dwarf |
 | `generic-x86_64` | x86-64 | Desktop — for building and validating |
 
 A target name is exactly the name of its `plugins-dep/configs/<target>_defconfig` in
 `mod-plugin-builder`; `./build` and `./validate` will list them if you get one wrong. Note that
 the desktop target is `generic-x86_64`, not `x86_64`.
+
+**`modduox`'s toolchain compiles for the Cortex-A53 cores specifically**
+(`CT_ARCH_CPU=cortex-a53` in `mod-plugin-builder/toolchain/modduox.config`), not the Duo X's two
+Cortex-A72 cores — your code still runs on either, it's just not tuned for the A72's pipeline.
+Size a CPU budget on the A53 figures in [CAVEATS.md](CAVEATS.md), not an assumption of
+A72-class headroom.
+
+A 2019 pre-release Duo X ("Limited Edition") shipped in small numbers with an NXP i.MX8 chip
+instead of the RK3399 above. It was superseded by the production unit and isn't a target this
+toolchain distinguishes.
 
 Most targets also have a `-new` variant — `moddwarf-new`, `modduox-new`, `modduo-new` — which is
 the same device on a newer toolchain (GCC 9.4.0, glibc 2.27). **This is what MOD's own current
