@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MOD Plugin SDK — build LV2 plugins for MOD-powered devices</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      color: #1a1a1a;
+      background: #fff;
+    }
+
+    header {
+      background: #0d0d0d;
+      color: #fff;
+      padding: 2rem 2rem 1.75rem;
+      border-bottom: 3px solid #e8441a;
+    }
+
+    header .logo {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #aaa;
+      margin-bottom: 0.5rem;
+    }
+
+    header .logo a { color: #aaa; text-decoration: none; }
+    header .logo a:hover { color: #fff; }
+
+    header h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 0.25rem;
+    }
+
+    header .uri {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.85rem;
+      color: #e8441a;
+    }
+
+    header .tagline {
+      margin-top: 0.6rem;
+      color: #ccc;
+      font-size: 0.95rem;
+      max-width: 640px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #0d0d0d;
+      margin: 2.5rem 0 0.75rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    h2:first-child { margin-top: 0; }
+
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #0d0d0d;
+      margin: 1.5rem 0 0.5rem;
+    }
+
+    p { margin-bottom: 1rem; color: #333; }
+    a { color: #c0392b; }
+    a:hover { color: #e8441a; }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.85em;
+      background: #f4f4f4;
+      padding: 0.15em 0.4em;
+      border-radius: 3px;
+      color: #c0392b;
+    }
+
+    pre {
+      background: #f4f4f4;
+      border-left: 3px solid #e8441a;
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      margin: 1rem 0 1.5rem;
+      border-radius: 0 4px 4px 0;
+    }
+
+    pre code { background: none; padding: 0; color: #1a1a1a; font-size: 0.82rem; line-height: 1.55; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0 1.5rem;
+      font-size: 0.9rem;
+    }
+
+    th {
+      text-align: left;
+      font-weight: 600;
+      padding: 0.55rem 0.75rem;
+      background: #f4f4f4;
+      border: 1px solid #e0e0e0;
+      color: #0d0d0d;
+    }
+
+    td {
+      padding: 0.6rem 0.75rem;
+      border: 1px solid #e0e0e0;
+      vertical-align: top;
+    }
+
+    td.mono, td:first-child {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.82rem;
+    }
+
+    .doc-table td:first-child { white-space: nowrap; color: #c0392b; font-weight: 600; }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0 1.5rem;
+    }
+
+    .card {
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 1.1rem 1.25rem;
+    }
+
+    .card h3 { margin-top: 0; font-size: 0.9rem; }
+    .card p { margin-bottom: 0; font-size: 0.87rem; color: #555; }
+
+    .note {
+      background: #fff8f0;
+      border-left: 3px solid #e8441a;
+      padding: 0.85rem 1.25rem;
+      margin: 1rem 0 1.5rem;
+      border-radius: 0 4px 4px 0;
+      font-size: 0.9rem;
+      color: #444;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.15em 0.55em;
+      border-radius: 3px;
+      background: #f0f0f0;
+      color: #777;
+    }
+
+    footer {
+      margin-top: 4rem;
+      padding: 1.5rem 2rem;
+      background: #f4f4f4;
+      border-top: 1px solid #e0e0e0;
+      font-size: 0.8rem;
+      color: #888;
+      text-align: center;
+    }
+
+    footer a { color: #888; }
+    footer a:hover { color: #333; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><a href="https://mod.audio">MOD Audio</a></div>
+  <h1>MOD Plugin SDK</h1>
+  <div class="uri">github.com/mod-audio/mod-plugin-sdk</div>
+  <p class="tagline">
+    Everything you need to build an audio plugin for MOD-powered devices — from LV2 source
+    to a working pedal, with its own web interface, on your unit.
+  </p>
+</header>
+
+<div class="container">
+
+  <h2>Overview</h2>
+  <p>
+    Plugins for MOD are <a href="https://lv2plug.in/">LV2</a> plugins — an open, extensible
+    standard MOD did not invent and does not control. A plugin you write for MOD is a normal LV2
+    plugin that runs anywhere LV2 runs. There are no licensing requirements for making one:
+    build it, install it, give it away, sell it elsewhere — none of that involves MOD.
+  </p>
+  <p>
+    MOD defines a small number of LV2 extensions that let a plugin describe itself more richly
+    to MOD devices — how it looks, how it is categorised, how its controls behave. Using them is
+    optional; a plugin with no MOD extensions at all still works.
+  </p>
+  <table>
+    <thead><tr><th>Extension</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr><td><a href="https://mod-audio.github.io/mod-ns/mod/">mod:</a></td><td>Plugin metadata — brand, label, ranges, per-device defaults, CV, file types</td></tr>
+      <tr><td><a href="https://mod-audio.github.io/mod-ns/modgui/">modgui:</a></td><td>The plugin's web interface</td></tr>
+      <tr><td><a href="https://mod-audio.github.io/mod-ns/modpedal/">modpedal:</a></td><td>Pedalboard format — written by MOD's UI, not by plugin developers</td></tr>
+      <tr><td><a href="https://mod-audio.github.io/mod-license/">mod:license</a></td><td>Copy protection and trial mode, for commercial plugins</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Documentation</h2>
+  <p>Full detail lives in the markdown files in this repository — this page is the map. Each
+  link below opens the file on GitHub, rendered.</p>
+
+  <h3>Getting a plugin built and running</h3>
+  <table class="doc-table">
+    <tbody>
+      <tr><td><a href="https://github.com/mod-audio/mod-plugin-sdk/blob/main/REQUIREMENTS.md" target="_blank" rel="noopener">REQUIREMENTS</a></td><td>How MOD expects a plugin to behave. Read before writing DSP.</td></tr>
+      <tr><td><a href="https://github.com/mod-audio/mod-plugin-sdk/blob/main/BUILDING.md" target="_blank" rel="noopener">BUILDING</a></td><td>Building with <code>mod-plugin-builder</code>.</td></tr>
+      <tr><td><a href="https://github.com/mod-audio/mod-plugin-sdk/blob/main/RECIPES.md" target="_blank" rel="noopener">RECIPES</a></td><td>The <code>.mk</code> package format — how MOD builds your plugin.</td></tr>
+      <tr><td><a href="https://github.com/mod-audio/mod-plugin-sdk/blob/main/VALIDATING.md" target="_blank" rel="noopener">VALIDATING</a></td><td>Checking your bundle before you ship it.</td></tr>
+      <tr><td><a href="https://github.com/mod-audio/mod-plugin-sdk/blob/main/INSTALLING.md" target="_blank" rel="noopener">INSTALLING</a></td><td>Getting the bundle onto your MOD unit.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Making it a real plugin</h3>
+  <table class="doc-table">
+    <tbody>
+      <tr><td><a href="https://github.com/mod-audio/mod-plugin-sdk/blob/main/MODGUI.md" target="_blank" rel="noopener">MODGUI</a></td><td>The web interface — how to give your plugin a pedal face.</td></tr>
+      <tr><td><a href="https://github.com/mod-audio/mod-plugin-sdk/blob/main/METADATA.md" target="_blank" rel="noopener">METADATA</a></td><td>Brand, label, control ranges, per-device defaults.</td></tr>
+      <tr><td><a href="https://github.com/mod-audio/mod-plugin-sdk/blob/main/CATEGORIES.md" target="_blank" rel="noopener">CATEGORIES</a></td><td>How plugins are classified in the store.</td></tr>
+      <tr><td><a href="https://github.com/mod-audio/mod-plugin-sdk/blob/main/LV2-FEATURES.md" target="_blank" rel="noopener">LV2-FEATURES</a></td><td>Which LV2 features and extensions MOD supports.</td></tr>
+      <tr><td><a href="https://github.com/mod-audio/mod-plugin-sdk/blob/main/TIME.md" target="_blank" rel="noopener">TIME</a></td><td>Tempo and transport.</td></tr>
+      <tr><td><a href="https://github.com/mod-audio/mod-plugin-sdk/blob/main/CAVEATS.md" target="_blank" rel="noopener">CAVEATS</a></td><td>Target-specific gotchas worth knowing before you hit them.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Commercial plugins</h3>
+  <table class="doc-table">
+    <tbody>
+      <tr><td><a href="https://github.com/mod-audio/mod-plugin-sdk/blob/main/LICENSING.md" target="_blank" rel="noopener">LICENSING</a></td><td>Copy protection and trial mode. <span class="badge">coming later</span></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Under the hood</h2>
+  <p>
+    A MOD device runs an embedded Linux system with a real-time kernel. Audio is handled by
+    <a href="https://jackaudio.org/">JACK2</a>, with
+    <a href="https://github.com/mod-audio/mod-host">mod-host</a> on top loading and connecting
+    plugins. <a href="https://github.com/mod-audio/mod-ui">mod-ui</a> serves the web interface
+    users actually see, and renders your modgui.
+  </p>
+  <p><strong>All MOD systems run at 48 kHz.</strong> The same stack runs on every MOD product,
+    which is why one plugin bundle works across the range.</p>
+
+  <table>
+    <thead><tr><th>Target</th><th>Architecture</th><th>Product</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">modduo</td><td>ARMv7 (Cortex-A7)</td><td>MOD Duo</td></tr>
+      <tr><td class="mono">modduox</td><td>AArch64 (Cortex-A53)</td><td>MOD Duo X</td></tr>
+      <tr><td class="mono">moddwarf</td><td>AArch64 (Cortex-A35)</td><td>MOD Dwarf</td></tr>
+      <tr><td class="mono">generic-x86_64</td><td>x86-64</td><td>Desktop — for building and validating</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    The Dwarf's Cortex-A35 is in-order and slower per clock than the Duo X's A53, so it is the
+    target to size a CPU budget against. Most targets also have a <code>-new</code> variant
+    (<code>moddwarf-new</code> and friends) on a newer toolchain &mdash; GCC 9.4.0, glibc 2.27
+    &mdash; which is what MOD's own builds use.
+    <code>generic-x86_64</code> is not a shipping device target. It exists so you can build and test on
+    your own machine before cross-compiling, and it is the only target on which the automated
+    runtime tests can run. Use it constantly — it will save you hours.
+  </div>
+
+  <h3>Darkglass Anagram</h3>
+  <p>
+    <code>mod-plugin-builder</code> also cross-compiles for the Darkglass Anagram — Darkglass's
+    own hardware, on the same LV2 / JACK2 / mod-host stack. That's why
+    <code>darkglass-anagram</code> platform names show up alongside MOD's own inside the
+    toolchain. Darkglass maintain their own developer documentation for Anagram:
+    <a href="https://github.com/Darkglass-Electronics/Plugin-Dev-Setup">Plugin-Dev-Setup</a>.
+    If you're building specifically for Anagram, start there.
+  </p>
+
+  <h2>Frameworks</h2>
+  <div class="card-grid">
+    <div class="card"><h3>DPF</h3><p>Lightweight, C++, first-class MOD support. The path of least resistance.</p></div>
+    <div class="card"><h3>JUCE</h3><p>LV2 export since version 7.</p></div>
+    <div class="card"><h3>Rust</h3><p>Via the <code>lv2</code> crate.</p></div>
+    <div class="card"><h3>Pure Data</h3><p>Via hvcc — no C++ required.</p></div>
+    <div class="card"><h3>Max gen~</h3><p>Via max-gen-skeleton.</p></div>
+    <div class="card"><h3>Plain C</h3><p>Direct against the LV2 headers — no framework required.</p></div>
+  </div>
+
+  <h2>Related repositories</h2>
+  <table>
+    <tbody>
+      <tr><td><a href="https://github.com/mod-audio/mod-plugin-builder">mod-plugin-builder</a></td><td>The cross-compilation toolchain this documentation describes.</td></tr>
+      <tr><td><a href="https://github.com/mod-audio/mod-lv2-extensions">mod-lv2-extensions</a></td><td>The MOD LV2 extension definitions.</td></tr>
+      <tr><td><a href="https://github.com/mod-audio/mod-plugin-cookbook">mod-plugin-cookbook</a></td><td>Generate a plugin from a plain-language description.</td></tr>
+      <tr><td><a href="https://github.com/mod-audio/mod-host">mod-host</a></td><td>The LV2 host.</td></tr>
+      <tr><td><a href="https://github.com/mod-audio/mod-ui">mod-ui</a></td><td>The web interface that renders your modgui.</td></tr>
+      <tr><td><a href="https://github.com/mod-audio/mod-sdk">mod-sdk</a> <span class="badge">unmaintained</span></td><td>Older interactive modgui editor. Its template and artwork library is still useful — see MODGUI.</td></tr>
+      <tr><td><a href="https://github.com/Darkglass-Electronics/Plugin-Dev-Setup">Darkglass Plugin-Dev-Setup</a></td><td>Darkglass's own developer docs for the Anagram, built on the same <code>mod-plugin-builder</code> toolchain this documentation describes.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Getting help</h2>
+  <p>
+    <strong>Forum:</strong> <a href="https://forum.mod.audio">forum.mod.audio</a> — the plugin
+    developer community.<br>
+    <strong>Issues:</strong> open one on
+    <a href="https://github.com/mod-audio/mod-plugin-sdk/issues">this repository</a> for
+    documentation problems.
+  </p>
+
+  <h2>Licence</h2>
+  <p>ISC. Use this documentation, quote it, adapt it, build on it.</p>
+
+</div>
+
+<footer>
+  &copy; MOD Audio Limited &mdash;
+  <a href="https://mod.audio">mod.audio</a> &mdash;
+  <a href="mailto:sales@mod.audio">sales@mod.audio</a>
+</footer>
+
+</body>
+</html>
