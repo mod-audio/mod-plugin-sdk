@@ -48,8 +48,14 @@ a `.ttl` in place over SSH; it does not pick up a new `.so`. For a new binary us
 **It will not replace a plugin that is loaded.** If the current pedalboard holds an instance, the
 reply is `{"ok": false, "error": "Plugin is currently in use, cannot remove", "installed": [], "removed": []}`
 and nothing changes on the device. Remove the instance (or load another pedalboard) and post again.
-A successful update lists the URI under both `removed` and `installed`. Seen 2026-09-17 on a Dwarf
-running 1.14.0.3333.
+A successful update lists the URI under both `removed` and `installed`.
+
+<details>
+<summary>Verification</summary>
+
+Seen 2026-09-17 on a Dwarf running 1.14.0.3333.
+
+</details>
 
 Or copy the bundle over with `scp` and restart mod-ui to pick it up — this is the method
 Darkglass document for Anagram, and it works the same way on MOD units, since both run the
@@ -90,10 +96,10 @@ directory change: `SystemCleanup` in `mod-ui/mod/webserver.py`.
 
 </details>
 
-Verified again 2026-09-16 on a Dwarf running 1.14.0.3333, 25 bundles at once: `scp -O -r` into
-`/root/.lv2/` + `systemctl restart jack2 mod-ui`, then `lv2ls` lists every URI, mod-ui's
-`/effect/get?uri=` reports the new `version`, and `/effect/add//graph/<name>?uri=` /
-`/effect/remove//graph/<name>` work for each. Things learned doing it:
+Confirmed working end to end: `scp -O -r` into `/root/.lv2/` + `systemctl restart jack2 mod-ui`,
+then `lv2ls` lists every URI, mod-ui's `/effect/get?uri=` reports the new `version`, and
+`/effect/add//graph/<name>?uri=` / `/effect/remove//graph/<name>` work for each. Things learned
+doing it:
 
 - **Reinstalling over a newer version works without a bump when the Store copy is absent**, which
   it is on a fresh image (`/usr/lib/lv2` had none of these). With a Store copy present, lilv picks
@@ -120,8 +126,16 @@ Verified again 2026-09-16 on a Dwarf running 1.14.0.3333, 25 bundles at once: `s
   `-n` no fork, `-i` interactive, other ports than 5555/5556. Each command answers `resp <code> [value]`.
   `connect system:capture_1 effect_0:<input symbol>` puts real input on it; leave the outputs unconnected and
   nothing reaches the speakers. It is invisible to mod-ui and gone when it quits (check with `jack_lsp`).
-  Verified on a Dwarf, a Duo and a Duo X. A command sent to the *running* mod-host on 5555 while
-  mod-ui is up is never read: it sits in the socket backlog until mod-ui disconnects.
+  A command sent to the *running* mod-host on 5555 while mod-ui is up is never read: it sits in
+  the socket backlog until mod-ui disconnects.
+
+<details>
+<summary>Verification</summary>
+
+Confirmed 2026-09-16 on a Dwarf running 1.14.0.3333, 25 bundles at once. Second-mod-host test
+verified on a Dwarf, a Duo and a Duo X.
+
+</details>
 
 ## To write / verify
 
