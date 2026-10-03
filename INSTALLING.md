@@ -10,10 +10,10 @@ model; Duo, Duo X and Dwarf run the same mod-ui and mod-host.
 - **USB**: the unit is a network device on the cable. It is `http://192.168.51.1`, or
   `http://moddwarf.local` (Duo and Duo X follow the same `<hostname>.local` pattern) where mDNS
   resolves. SSH is on the same address as `root`, password `mod` on a stock image.
-- **Bluetooth** (Duo X built in; Dwarf and Duo with a USB dongle): `http://192.168.50.1` after
-  pairing.
-- **Wi-Fi**: none built in on any unit. The Dwarf manual's "Web UI access" page is the
-  user-facing reference for the dongle cases.
+- **Bluetooth**: not built into any unit — Duo, Duo X and Dwarf all need a USB dongle for it.
+  With one attached: `http://192.168.50.1` after pairing.
+- **Wi-Fi**: none built in on any unit, and no dongle path either. The Dwarf manual's "Web UI
+  access" page is the user-facing reference for the Bluetooth dongle case.
 - The Web UI's own address is what `curl` and the `/sdk/*` endpoints use; mod-host's command port
   (`5555`) is loopback-only.
 
