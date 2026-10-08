@@ -25,7 +25,8 @@ devices: how it looks, how it is categorised, how its controls behave. They are 
 | [`mod:`](https://mod-audio.github.io/mod-ns/mod/) | Plugin metadata — brand, label, ranges, per-device defaults, CV, file types |
 | [`modgui:`](https://mod-audio.github.io/mod-ns/modgui/) | The plugin's web interface |
 | [`modpedal:`](https://mod-audio.github.io/mod-ns/modpedal/) | Pedalboard format — written by MOD's UI, not by plugin developers |
-| [`mod:license`](https://mod-audio.github.io/mod-license/) | Copy protection and trial mode, for commercial plugins |
+| [`hmi:`](https://mod-audio.github.io/mod-ns/hmi/) | Driving the hardware display and LEDs for an addressed parameter — MOD devices only, declare as optional |
+| [`mod:license`](https://mod-audio.github.io/mod-ns/ext/license/) | Copy protection and trial mode, for commercial plugins |
 
 All are ISC licensed. Using them is optional; a plugin with no MOD extensions at all still works.
 
