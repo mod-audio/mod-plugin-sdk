@@ -133,9 +133,17 @@ ports is **addressed** to a hardware actuator or unaddressed again. Through the 
 can then drive what the device shows for that control: `set_label`, `set_value`, `set_unit`,
 `set_indicator`, `set_led_with_blink`, `set_led_with_brightness` and `popup_message`. The
 extension is defined in
-[`mod-lv2-extensions/mod-hmi.lv2`](https://github.com/mod-audio/mod-lv2-extensions). No public
-MOD plugin uses it yet, so there is no worked example here. The feature is absent on MOD
-Desktop, so always check for it.
+[`mod-lv2-extensions/mod-hmi.lv2`](https://github.com/mod-audio/mod-lv2-extensions) and
+specified at [moddevices.com/ns/hmi](http://moddevices.com/ns/hmi/). No public MOD plugin uses
+it yet, so there is no worked example here. The feature is absent on MOD Desktop, so declare it
+as `lv2:optionalFeature` and always check for it.
+
+The API grows by appending: new functions go at the end of `LV2_HMI_WidgetControl`, each with
+its own `LV2_HMI_WIDGETCONTROL_SIZE_*` constant that the plugin compares against the struct's
+`size` before calling (this is how `popup_message` was added), and per-addressing capability bits
+in `LV2_HMI_AddressingInfo::caps` say which calls do anything for a given hardware control. A
+plugin built against a newer header therefore runs on an older host as long as it checks before
+each call.
 
 <!-- GAP: mod-hmi has no worked example here -->
 
@@ -143,7 +151,12 @@ Desktop, so always check for it.
 <summary>Verification</summary>
 
 Feature pass under `__MOD_DEVICES__`: `effects.c:769`. Addressed/unaddressed notification call:
-`effects.c:4719-4724,7541,7590`. Method list: `mod-host/src/lv2/lv2-hmi.h:223-272`.
+`effects.c:4719-4724,7541,7590`. Method list: `mod-host/src/lv2/lv2-hmi.h:223-272`. Size
+constants: `lv2-hmi.h:193-198`; capability bits: `lv2-hmi.h:52-58`. The spec URL returned 404
+until the page was published on 2026-10-08. The stock Dwarf firmware also has a raw `glcd_draw`
+command (display id, x, y, hex bitmap, one byte per 8 vertical pixels;
+`mod-dwarf-controller/app/src/protocol.c:749`) that nothing in mod-ui sends and that the firmware
+does not cache; a plugin-driven display would need the firmware to own the bitmap.
 
 </details>
 
