@@ -58,6 +58,7 @@ toolchain: the Cloud Builder" for which browser needs which URL.
 - [RECIPES.md](RECIPES.md) — the `.mk` package format, which is how MOD builds your plugin
 - [VALIDATING.md](VALIDATING.md) — checking your bundle before you ship it
 - [INSTALLING.md](INSTALLING.md) — getting the bundle onto your MOD unit
+- [DESKTOP.md](DESKTOP.md) — building for the MOD Desktop targets (Linux, Windows, macOS) and installing into a running MOD Desktop
 
 **Making it a real plugin**
 
