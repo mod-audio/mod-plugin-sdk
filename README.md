@@ -158,3 +158,5 @@ specifically for Anagram, start there — it covers Anagram-specific mechanics t
 ## Licence
 
 ISC. Use this documentation, quote it, adapt it, build on it.
+
+The licence covers this documentation, not the MOD logo. The MOD logo is a registered trademark (EU trade mark no. 016228827; UK trade mark no. UK00916228827).
