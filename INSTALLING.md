@@ -32,6 +32,10 @@ cd ~/mod-workdir/<platform>/plugins
 tar czf - mybundle.lv2 | base64 | curl -F 'package=@-' http://192.168.51.1/sdk/install; echo
 ```
 
+`package` must be a **file** field (`@-`, or `@bundle.b64;filename=bundle.tgz` for a file on disk).
+`-F 'package=<bundle.b64'` sends a plain form field instead, and mod-ui answers a bare HTTP 500
+because the handler reads `request.files['package']`.
+
 The `/sdk/install` endpoint is live in current mod-ui. It base64-decodes the upload, untars it,
 and for each bundle: removes an existing bundle of the same name from mod-host and deletes its
 directory (presets stored *inside* that bundle go with it), moves the new one into `/root/.lv2`,
@@ -104,6 +108,14 @@ doing it:
 - **Reinstalling over a newer version works without a bump when the Store copy is absent**, which
   it is on a fresh image (`/usr/lib/lv2` had none of these). With a Store copy present, lilv picks
   the bundle with the higher `lv2:minorVersion`/`microVersion`, so bump before testing a fix.
+- **USB audio interface mode skews DSP measurements on a Duo or Duo X.** With
+  `/data/enable-usb-audio-gadget` present, the `jack-usbgadget-playback`/`-capture` services run
+  zita-j2a/a2j bridges inside jackd. On a Duo they cost ~78% DSP (empty board ~90% with xruns
+  climbing, ~12% without them); on a Duo X they took an empty board from ~7% to ~57%. Before
+  measuring a plugin, run `systemctl stop jack-usbgadget-playback jack-usbgadget-capture`; a reboot
+  starts them again. Removing the flag file turns USB audio off for good (USB networking stays,
+  since that is `enable-usb-multi-gadget`; USB MIDI takes its place). The Web UI's DSP figure arrives
+  on the `/websocket` as `stats <dsp %> <xruns>`.
 - **There is no `curl` on the device.** Script the mod-ui checks from the host against
   `http://192.168.51.1`, or use `python3 -c 'import urllib.request…'` on the unit (Python 3.4).
 - **A Mac copying bundles leaves `._<bundle>.lv2` AppleDouble files in `/root/.lv2`**; lilv logs an
@@ -134,6 +146,8 @@ doing it:
 
 Confirmed 2026-09-16 on a Dwarf running 1.14.0.3333, 25 bundles at once. Second-mod-host test
 verified on a Dwarf, a Duo and a Duo X.
+USB audio DSP cost measured 2026-10-16 on a Duo and a Duo X (1.14.0.3364); `package=<file` 500
+seen the same day, cause read from `SDKEffectInstaller` in mod-ui `master`.
 
 </details>
 
