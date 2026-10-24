@@ -149,23 +149,26 @@ hardware:
   folder: upload every abstraction the patch uses, including the ones your abstractions use,
   and drop folder prefixes. `declare -path` is ignored. The project's own hvcc metadata JSON is
   not used; the builder generates generic metadata (no UI, no port groups, no enumerators).
-- **Heavy's SIMD-off code path allocates on the audio thread right after start.** On the Dwarf
-  (no SIMD, see below): roughly 15–35 one-off `malloc` calls depending on how many parameters
-  and heavylib abstractions the patch uses; none per block, no locks. On the Duo the NEON build
-  of the same patch makes none at all; its `nosimd` build matches the Dwarf's count.
-- **SIMD off costs a plain patch about 2× on the Duo** (0.015 → 0.032 ms per 128-frame block for
-  a gain patch, +15% for a reverb from heavylib), so set `nosimd` only when the patch needs it.
-  On the Dwarf and Duo X it changes nothing.
+- **SIMD on the Duo: leave it on.** Heavy picks its SIMD code by the `__ARM_NEON__` macro. Only
+  the Duo toolchain defines it, so only Duo builds use NEON. The Duo X and Dwarf toolchains
+  (aarch64) define only `__ARM_NEON`, so there Heavy always runs its plain C path and the
+  `nosimd` flag changes nothing. Measured on a Duo, turning SIMD off (`"nosimd": true`):
+  - doubles the cost of a simple patch (a gain patch: 0.015 → 0.032 ms per 128-frame block) and
+    adds about 15% to a heavylib reverb;
+  - switches to Heavy's SIMD-off code path, which makes roughly 15–35 one-off `malloc` calls on
+    the audio thread right after start (more parameters and heavylib abstractions, more calls;
+    none per block, no locks). The NEON build of the same patch makes none. The Dwarf and Duo X
+    always run this path and show the same count.
+- **The one exception is `[expr~]`.** hvcc implements `[expr~]` without SIMD only (its own
+  documentation says it does not work with SIMD optimizations). Built with NEON, its math
+  functions are empty stubs and a numeric constant does not compile. A build that reports
+  success outputs full-scale garbage. builder.mod.audio sets `nosimd` automatically for a patch
+  that contains `expr~`, and only then. Building locally, do the same: set `"nosimd": true` at
+  the top level of the hvcc metadata JSON only for a patch that uses `[expr~]`.
 - **heavylib's `hv.reverb~` on the Duo:** one block over the 2.667 ms deadline per run (not seen
-  on the Dwarf), and a different output level between the NEON and the SIMD-off build. Cause
-  not investigated.
-- **Heavy uses NEON on the Duo only.** It selects NEON on `__ARM_NEON__`. The Duo toolchain
-  defines it; the aarch64 toolchains (Duo X, Dwarf) define only `__ARM_NEON`, so on those two the
-  generated code runs without SIMD.
-- **`[expr~]` (hvcc v0.17.2) needs SIMD off.** With NEON its math functions are stubs and a
-  numeric constant doesn't compile — built with NEON it outputs full-scale garbage from a build
-  that reports success. Set `"nosimd": true` at the top level of the hvcc metadata JSON for a
-  Duo build.
+  on the Dwarf), and the output level differs between the NEON and the SIMD-off build. Which
+  level is right, and the cause, were not investigated; it does not show that either build is
+  wrong.
 - **`expr~` with a numeric constant fails to compile in hvcc v0.17.2** unless the patch also
   contains an object that pulls in the signal-variable header, such as `sig~`. Not fixed
   upstream as of this writing.

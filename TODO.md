@@ -135,6 +135,9 @@ a gap gets closed: remove the inline comment, check the box here.
 - [x] Pure Data (hvcc) on the devices — measured on a Dwarf and a Duo 2026-10-02/03: the v0.14.0
       pin and `[expr]`, NEON on the Duo only, `[expr~]` needs SIMD off, the two v0.17.2 defects,
       what expr accepts, start-up allocations on the SIMD-off path
+- [ ] Pure Data: does NEON on the Duo limit feedback (short `delwrite~`/`delread~` loops, `rpole~`,
+      `biquad~`-style filters) compared with the SIMD-off build? Claimed by an hvcc developer
+      (forum, 2026-10), not tested. Build one feedback patch both ways, compare output on a Duo
 
 ## 12. LICENSING.md — blocked on a decision, not a writing task
 
