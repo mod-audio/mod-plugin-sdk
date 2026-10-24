@@ -67,6 +67,21 @@ the Desktop, but no UI control exposes it as of 0.0.14.
 
 </details>
 
+## Block size and sample rate your plugin sees
+
+MOD Desktop always runs the engine at 48 kHz. The block size depends on how it is started:
+
+- **Standalone app:** the "Buffer size" setting in the launcher window, 64, 128 or 256 (default 128), passed to
+  `jackd -p`. Mirror of the units' choice; nothing above 256 is offered or tested.
+- **Inside a DAW (VST3 / CLAP / AU / VST2 plugin):** always 128 frames at 48 kHz, whatever the DAW uses. The plugin
+  starts its own jackd with the `mod-desktop` driver and `-r 48000 -p 128`, fed through shared memory from the DAW's
+  audio thread; it cuts the DAW's buffer into 128-frame blocks, resamples to and from 48 kHz, and reports one block
+  (scaled to the DAW rate) as latency. The launcher's buffer setting has no effect here.
+
+So test at 64, 128 and 256 frames, 48 kHz. Verification: `mod-desktop` `src/plugin/DesktopPlugin.cpp:22-23`
+(`kAudioBufferSize = 128`, `kAudioSampleRate = 48000`), `:479-490` (jackd args), `:158-169` (latency);
+`src/systray/mod-desktop.hpp:713-722` and `mod-desktop.ui` (the three sizes), `:952-953` (`-p`).
+
 ## To write / verify
 
 - [ ] A worked example from a bare checkout to an installed bundle on each of the three targets,
@@ -77,5 +92,10 @@ the Desktop, but no UI control exposes it as of 0.0.14.
 - [ ] Code signing on macOS and Windows for third-party bundles: the Desktop's own packages are
       unsigned today; what Gatekeeper does with an unsigned `.dylib` loaded by an unsigned app
       has not been tested.
-- [ ] Validation numbers for macOS: the Carla discovery step has not been verified on that
-      target yet.
+- [x] Validation on macOS, partial (2026-10-08): the Carla discovery step still does not run on the
+      Mac build, but every plugin of the 188-bundle set was added to and removed from a running
+      mod-host on an M1 Mac mini (jackd dummy driver, the frozen 0.0.14.25 payload): 238 plugin
+      URIs, 238 `add` ok, 238 `remove` ok, no instantiation failure. One caveat found the same
+      day and not plugin-specific: jack2 on macOS could crash the host on plugin removal and on a
+      failed activation (fixed in the Desktop build). Still open: the
+      Carla discovery step itself on macOS.

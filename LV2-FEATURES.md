@@ -186,14 +186,27 @@ LV2 does not give groups an index). Groups are sorted by index, then name, then 
 
 In the UI, control inputs are **re-sorted by group index, then by port index**, and each run of
 one group is drawn together. So grouping never requires renumbering ports: add it to a shipped
-plugin without touching a symbol or an index. Ungrouped ports sort by port index among
-themselves. The CSS colours 32 groups. `sord_validate` accepts the triples above.
+plugin without touching a symbol or an index. The CSS colours 32 groups. `sord_validate` accepts the triples above.
+
+Two traps, both seen on shipped store plugins (2026-10-16):
+
+- **Always give every group an `lv2:index`.** Without it every group has index 0, so they display
+  **alphabetically**. amsynth shows "Amp" (master volume) first and its oscillators near the end.
+- **Group every visible control, or none.** The UI comparator uses group index when both ports are grouped and
+  port index otherwise. Mixing grouped and ungrouped ports makes it non-transitive, so the order depends on the
+  sort algorithm. MDA JX10 on a Dwarf: ports 0–10, then Amp Envelope (15–18), then Filter Envelope (11–14), then
+  19–23. Leave out only what the panel hides anyway: the `lv2:enabled` and `lv2:freeWheeling` designations,
+  `notOnGUI`, and `reportsLatency`.
+- Inside a group, ports display in `lv2:index` order. When you write a new plugin, choose port indices with the
+  sections in mind. On a shipped plugin you can't reorder them without breaking presets.
 
 <details>
 <summary>Verification</summary>
 
 Read from `mod-ui/utils/utils_lilv.cpp:2864-2899`, group sort at `:3142`. UI re-sort and
-grouping render: `html/js/host.js:374-425`.
+grouping render: `html/js/host.js:374-425`. Hidden ports: `html/js/modgui.js:12-17`. The two traps
+were replayed with the `host.js` sort in node on `/effect/get` replies from a Dwarf on
+`v1.14.0.3367` (amsynth, MDA JX10).
 
 </details>
 

@@ -265,10 +265,22 @@ export GIT_TERMINAL_PROMPT=0 GIT_CONFIG_COUNT=1 \
        GIT_CONFIG_KEY_0=url.git@github.com:.insteadOf GIT_CONFIG_VALUE_0=https://github.com/
 ```
 
-**Rust recipes need `rustup` on the host, and flip its default.** Rust-based recipes run
-`rustup default nightly` before building and `rustup default stable` after, so they need
-`rustup` installed with an undated `nightly` toolchain available, and must not run concurrently
-with any other cargo build on the same machine. A host without `~/.cargo` cannot build them.
+**Rust recipes need `rustup` on the host, and some flip its default.** Every Rust recipe calls
+`~/.cargo/bin/cargo` by that literal path, so a host without `~/.cargo` cannot build them. Some
+(`dm-fuzz`, `dm-rat`, `dm-shredmaster`, …) run `rustup default nightly` before building and
+`rustup default stable` after, so they need an undated `nightly` toolchain and must not run
+concurrently with any other cargo build on the same machine; others (`dm-stutter`,
+`dm-timewarp`, `dm-envelopefollower`) build on the default `stable`. Either way you need the
+target added (`rustup target add aarch64-unknown-linux-gnu`, `armv7-unknown-linux-gnueabihf`
+for the Duo). To keep Rust off your home directory, install `rustup` under another directory
+and run the build with `HOME` pointing there. Cargo downloads the crates from crates.io during
+the build, outside Buildroot's download cache.
+
+**hvcc/DPF recipes must pass `CROSS_COMPILING=true`.** The DPF copy the builder stages only sets
+`CROSS_COMPILING` for WASM, so the Makefile hvcc generates runs DPF's `lv2_ttl_generator`, an
+ARM binary, on the build host, and fails with `cannot execute binary file` (Error 126). Add
+`CROSS_COMPILING=true` to the `$(MAKE) ... -C $(@D)/build` line and install the plugin's own
+TTL files, as the `earsaver` recipe needs (verified on the Dwarf toolchain, 2026-10-14).
 
 ## Building without a toolchain: the Cloud Builder
 

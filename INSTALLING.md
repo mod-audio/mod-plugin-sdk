@@ -128,6 +128,23 @@ doing it:
   nothing reaches the speakers. It is invisible to mod-ui and gone when it quits (check with `jack_lsp`).
   A command sent to the *running* mod-host on 5555 while mod-ui is up is never read: it sits in
   the socket backlog until mod-ui disconnects.
+  Feed the plugin from `system:capture_*` as shown, not from a JACK client of your own: on the device
+  mod-host runs as a jackd *internal* client and jack2mod resumes internal clients only from server-side
+  threads, so an external test client wired straight into an `effect_N` input never gets that effect
+  processed (its output stays silent). Verified 2026-10-12 on a Dwarf with a Gain plugin and an impulse
+  meter: silent when fed by an external client, fine when fed via `system:capture_2`.
+- **Measuring a plugin on the device (load, xruns, does audio pass)**: `jack_cpu_load` streams forever and can
+  hang on exit; use `timeout -k 2 5 jack_cpu_load 2>&1 | head -20` and drop the first reading (stale). The
+  empty-board baseline on a Dwarf is ~9.3 % at 64 frames and ~6.2 % at 128, so subtract it before comparing
+  periods. **Do not count xruns with `dmesg`**: on 1.14 images JACK xruns never reach the kernel log (0 lines
+  over a session with 9157 xruns). Use a small JACK client that counts calls to its `jack_set_xrun_callback`
+  callback. On the Dwarf, mod-ui's graph `capture_1`/`capture_2` are `system:capture_2`/`system:capture_1`
+  and graph `playback_1`/`playback_2` go out on `system:playback_2`/`system:playback_1`, so check the real
+  ports with `jack_lsp -c` before wiring a loop-cable test. Verified 2026-10-12 on a Dwarf, 64 and 128 frames
+  (plugin sweep). A paid plugin without a licence on the unit runs in demo mode and goes silent at
+  intervals, so one silent reading from it means nothing: measure again before calling it broken (2026-10-13). On a Duo X (4 × A53 + 2 × A72) jackd's real-time threads are not pinned and can run on
+  either kind of core, so a single load reading can be off by a factor of two; repeat before comparing (empty-board
+  baseline there: 9.1 % at 64, 6.0 % at 128; 2026-10-13).
 
 <details>
 <summary>Verification</summary>

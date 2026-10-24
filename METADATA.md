@@ -183,6 +183,23 @@ Label truncation: `utils/utils_lilv.cpp:2295-2296`, mini parser `:1595-1612`. Br
 
 </details>
 
+**Say each of these once per plugin.** A second `mod:label` (or `mod:brand`, `doap:name`,
+`lv2:minorVersion`, `lv2:microVersion`) with a *different* value is not an error in Turtle, but
+which value a parser keeps is undefined. The MOD cloud pipeline extracts the bundle once per
+platform and rejects the whole release when the results differ: `Bundle data differed between
+duo and duox`. Nothing of the package is published. A repeated *identical* value is harmless.
+
+<details>
+<summary>Verification</summary>
+
+A store release of tap-lv2 (2026-10-17): bundle verification
+extracted `"label": "Equalizer/BW"` on Duo and `"Equalizer/B"` on Duo X from a `tap_eqbw.ttl`
+that declared both, and failed. With the second pair deleted (mod-lv2-data `4d4fb430`) the
+same package passed. The old store build of that TTL had passed,
+so the pick is not stable over time either.
+
+</details>
+
 ## What the Cloud Builder share page shows
 
 A persistent build on builder.mod.audio gets a share page (`/install/<id>`) that names the
