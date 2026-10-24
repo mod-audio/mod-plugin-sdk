@@ -141,30 +141,33 @@ hardware:
 
 - **builder.mod.audio builds Pd patches with hvcc v0.17.2 as of this writing** (previously
   v0.14.0, which failed on `[expr]`/`[expr~]` with `Don't know how to parse object "expr"`).
-  The builder sets `nosimd` itself when a patch contains `expr~` and ships an include fix (see
-  below). Unsupported in `expr`/`expr~` as of v0.17.2: `mtof ftom dbtorms rmstodb powtodb dbtopow
+  The builder builds every patch with `nosimd` and ships an include fix (see below). Unsupported in `expr`/`expr~` as of v0.17.2: `mtof ftom dbtorms rmstodb powtodb dbtopow
   size sum Sum avg Avg random`, `drem` in `expr~`, table and symbol access, float inlets (`$f2`)
   in `expr~`, `fexpr~`.
 - **Abstractions must be uploaded flat.** The builder writes every uploaded file into one
   folder: upload every abstraction the patch uses, including the ones your abstractions use,
   and drop folder prefixes. `declare -path` is ignored. The project's own hvcc metadata JSON is
   not used; the builder generates generic metadata (no UI, no port groups, no enumerators).
-- **SIMD on the Duo: leave it on.** Heavy picks its SIMD code by the `__ARM_NEON__` macro. Only
-  the Duo toolchain defines it, so only Duo builds use NEON. The Duo X and Dwarf toolchains
-  (aarch64) define only `__ARM_NEON`, so there Heavy always runs its plain C path and the
-  `nosimd` flag changes nothing. Measured on a Duo, turning SIMD off (`"nosimd": true`):
-  - doubles the cost of a simple patch (a gain patch: 0.015 → 0.032 ms per 128-frame block) and
-    adds about 15% to a heavylib reverb;
-  - switches to Heavy's SIMD-off code path, which makes roughly 15–35 one-off `malloc` calls on
-    the audio thread right after start (more parameters and heavylib abstractions, more calls;
-    none per block, no locks). The NEON build of the same patch makes none. The Dwarf and Duo X
-    always run this path and show the same count.
-- **The one exception is `[expr~]`.** hvcc implements `[expr~]` without SIMD only (its own
-  documentation says it does not work with SIMD optimizations). Built with NEON, its math
-  functions are empty stubs and a numeric constant does not compile. A build that reports
-  success outputs full-scale garbage. builder.mod.audio sets `nosimd` automatically for a patch
-  that contains `expr~`, and only then. Building locally, do the same: set `"nosimd": true` at
-  the top level of the hvcc metadata JSON only for a patch that uses `[expr~]`.
+- **Build without SIMD: set `"nosimd": true`** at the top level of the hvcc metadata JSON.
+  hvcc's maintainers treat SIMD builds as experimental and unsupported, and builder.mod.audio
+  builds every Pd patch this way. Heavy picks its SIMD code by the `__ARM_NEON__` macro. Only
+  the Duo toolchain defines it, so only Duo builds are affected. The Duo X and Dwarf toolchains
+  (aarch64) define only `__ARM_NEON`, so there Heavy always runs its plain C path and the flag
+  changes nothing. What goes wrong with NEON on the Duo, each with a build that reports success:
+  - **single-sample feedback runs one vector (4 samples) late.** A 1-pole lowpass with its
+    feedback through `[delwrite~]`/`[vd~]` at delay 0 behaves as a 4-sample loop: about 9 dB
+    quieter, its cutoff near a quarter of the setting, and a spurious peak at a quarter of the
+    sample rate. The SIMD-off build matches the textbook filter exactly;
+  - **`[expr~]` outputs full-scale garbage** (hvcc implements it without SIMD only; its math
+    functions are empty stubs and a numeric constant does not compile);
+  - **log-based math loses precision** (`[ftom~]` off by several Hz;
+    [hvcc#184](https://github.com/Wasted-Audio/hvcc/issues/184)).
+- **What SIMD off costs on the Duo:** about 10–20 µs per 128-frame block for small patches
+  (gain 0.015 → 0.032 ms, the 1-pole above 0.049 → 0.058 ms), about 15% more for a heavylib
+  reverb; well under 1% of the 2.667 ms deadline in each case. The SIMD-off code path also makes
+  a few to ~35 one-off `malloc` calls on the audio thread right after start (more parameters and
+  heavylib abstractions, more calls; none per block, no locks). The Dwarf and Duo X always run
+  this path and show the same count.
 - **heavylib's `hv.reverb~` on the Duo:** one block over the 2.667 ms deadline per run (not seen
   on the Dwarf), and the output level differs between the NEON and the SIMD-off build. Which
   level is right, and the cause, were not investigated; it does not show that either build is
