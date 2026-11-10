@@ -36,7 +36,9 @@ exist in shipping code but aren't published. Read at `7764e1ff` (1.14 RC4).
 
 **Per-device defaults:** `mod:default_duo`, `mod:default_duox`, `mod:default_dwarf`,
 `mod:default_x64` — different default values per target, which is how one bundle can suit
-very different CPUs.
+very different CPUs. They live in the `mod:` namespace (`http://moddevices.com/ns/mod#`): written
+as `modgui:default_*`, or with a `mod:` prefix bound to the modgui namespace, mod-ui never sees
+them and the plain default (`mod:default`, else `lv2:default`) applies on every device.
 
 **CV:** `mod:CVPort` is the port class that makes a CV port on MOD (plain `lv2:CVPort` is hidden
 unless a developer-only environment flag is set). `mod:volts` is **a unit, not a port
@@ -48,7 +50,7 @@ output as unipolar or bipolar from the sign of that range.
 **Files:** `mod:fileTypes` (see below). `mod:supportedExtensions` is parsed but **read by
 nothing** in mod-ui — leave it out.
 
-**MIDI:** `mod:rawMIDIClockAccess`
+**MIDI:** `mod:rawMIDIClockAccess` (a port property; see [TIME.md](TIME.md))
 
 **Build metadata (internal — do not set these yourself):** `mod:builderVersion`,
 `mod:releaseNumber`, `mod:buildEnvironment`, `mod:buildId`. MOD's publishing pipeline writes the

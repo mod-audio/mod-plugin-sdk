@@ -88,15 +88,20 @@ bypass: `:1863`.
 - `mod:tempoRelatedDynamicScalePoints` on a control port marks its scale points as note
   divisions whose displayed value depends on the tempo (the UI shows "1/8 = 250 ms" style
   labels). It changes display only; the value your port receives is the scale-point value you
-  declared. `mod:tapTempo` is honoured by the addressing code. `mod:rawMIDIClockAccess` on a
-  MIDI input port asks for the clock messages to be left in the MIDI stream delivered to that
-  port, for plugins that do their own MIDI-clock handling; declared in `mod.lv2/mod.ttl`, not
-  traced through the host for this page.
+  declared. `mod:tapTempo` is honoured by the addressing code. `mod:rawMIDIClockAccess`, set as an
+  `lv2:portProperty` on a MIDI (atom) input port, makes mod-host connect that port straight to
+  every hardware MIDI input, ahead of its own MIDI handling, so the plugin sees MIDI Clock and
+  everything else the device receives. mod-ui hides the port: the user never patches it. Only
+  the plugin's first such port is wired. `mod.lv2/mod.ttl` types the term `rdf:Property` rather
+  than `lv2:PortProperty`, so `sord_validate` reports a correct use as an error; the hosts read it
+  as a port property.
 
 <details>
 <summary>Verification</summary>
 
-Rolling/relocate: `effects.c:8064-8127`. `mod:tempoRelatedDynamicScalePoints` display handling:
+Rolling/relocate: `effects.c:8064-8127`. `mod:rawMIDIClockAccess`: mod-host `src/effects.c:5083-5095`
+(port registered), `:3197-3207` and `:1349-1358` (connected to the hardware MIDI ports) at
+`12335c2`; mod-ui hides it with `lilv_port_has_property` at `utils/utils_lilv.cpp:1754` (`21344b83`). `mod:tempoRelatedDynamicScalePoints` display handling:
 mod-ui `html/js/utils/tempo.js:270-275`, `html/js/hardware.js:876` at `7764e1ff`. `mod:tapTempo`
 addressing: `hardware.js:181,388`, `mod/addressings.py:841-986`.
 
@@ -105,4 +110,3 @@ addressing: `hardware.js:181,388`, `mod/addressings.py:841-986`.
 ## To write / verify
 
 - [ ] Worked example of a tempo-synced delay, built and heard on a device
-- [ ] `mod:rawMIDIClockAccess`: trace what mod-host does with it
