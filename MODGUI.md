@@ -125,6 +125,21 @@ A modgui missing any of these is invalid and may not render.
 | `modgui:templateData` | Extra data made available to your templates |
 | `modgui:monitoredOutputs` | Output ports whose values the GUI receives at runtime — for meters and indicators |
 | `modgui:discussionURL` | Link to a forum thread or support page for the plugin |
+| `modgui:documentation` | A documentation file in the bundle, normally a PDF (`modgui:documentation <modgui/manual.pdf>`). Required for the MOD main store |
+
+**`modgui:documentation` is missing from the published `modgui.lv2` ontology**, although mod-ui
+reads it. So `lv2_validate` / `./validate` report two errors for each use ("Use of undefined
+property" and "has no label"). They are harmless: the property works.
+
+<details>
+<summary>Verification</summary>
+
+mod-ui reads it and resolves the path: `utils/utils_lilv.cpp:2451-2453` at master `d82b44af`
+(2026-11-10). Absent from `modgui.lv2/modgui.ttl` in the Dwarf toolchain
+(`moddwarf-new/target/usr/lib/lv2`); `sord_validate` on dm-TimeWarp.lv2 reports exactly those two
+errors and no others.
+
+</details>
 
 ### 3.3 Descriptive properties
 
